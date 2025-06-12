@@ -7,14 +7,13 @@ public class Lot : MonoBehaviour
     private bool isSurveyed = false;
     private bool isDrilled = false;
     private bool isSkipped = false;
-    private bool isTurnGoing = false;
 
     public bool IsSurveyed => isSurveyed;
     public bool IsDrilled => isDrilled;
     public bool IsSkipped => isSkipped;
     public bool IsProducing() => isDrilled && dailyProduction > 0;
     public int GetDailyProduction() => dailyProduction;
-    public bool IsTurnGoing => isTurnGoing;
+
 
     public void Initialize(int chance)
     {
@@ -24,31 +23,25 @@ public class Lot : MonoBehaviour
         dailyProduction = Mathf.Clamp(Mathf.RoundToInt(baseProduction + randomOffset), 0, 10);
     }
 
-    public bool Survey()
+    public void Survey()
     {
-        if (isSurveyed || isDrilled || GameManager.Instance.HasInteractedThisTurn) return false;
+        if (isSurveyed || isDrilled || GameManager.Instance.HasInteractedThisTurn) return;
 
-        if (!GameManager.Instance.TrySpend(40000)) return false;
+        if (!GameManager.Instance.TrySpend(40000)) return;
 
         isSurveyed = true;
-        isTurnGoing = true;
-        GameManager.Instance.isInteractionGoing = true;
         GetComponent<SpriteRenderer>().color = Color.green;
 
         Debug.Log($"{name} surveyed. Oil chance: {oilChance}%");
-        return true;
     }
 
-    public bool Drill()
+    public void Drill()
     {
-        if (isDrilled || GameManager.Instance.HasInteractedThisTurn) return false;
+        if (isDrilled || GameManager.Instance.HasInteractedThisTurn) return;
 
-        if (!GameManager.Instance.TrySpend(250000)) return false;
+        if (!GameManager.Instance.TrySpend(250000)) return;
 
         isDrilled = true;
-        isTurnGoing = false;
-        GameManager.Instance.isInteractionGoing = false;
-
         GetComponent<SpriteRenderer>().color = Color.blue;
 
         GameManager.Instance.RegisterInteraction();
@@ -58,20 +51,15 @@ public class Lot : MonoBehaviour
         }
 
         Debug.Log($"{name} drilled. Producing {dailyProduction} barrels/day.");
-        return true;
     }
 
-    public bool Skip()
+    public void Skip()
     {
-        if (GameManager.Instance.HasInteractedThisTurn) return false;
+        if (GameManager.Instance.HasInteractedThisTurn) return;
 
         isSkipped = true;
-        isTurnGoing = false;
-        GameManager.Instance.isInteractionGoing = false;
-
         GetComponent<SpriteRenderer>().color = Color.red;
         GameManager.Instance.RegisterInteraction();
         Debug.Log($"{name} skipped.");
-        return true;
     }
 }

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,13 +9,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int maxTurns = 30;
     [SerializeField] private int currentTurn = 1;
     [SerializeField] private int money = 1000000;
-    [SerializeField] private GameSceneUI gameSceneUIRef;
 
     private bool hasInteractedThisTurn = false;
     private List<Lot> producingLots = new List<Lot>();
-    private int totalGallons = 0;
-    public bool isInteractionGoing = false;
-    private List<int> tanks = new List<int>();
+    private int totalBarrels = 0;
 
     public int CurrentTurn => currentTurn;
     public int Money => money;
@@ -26,10 +22,6 @@ public class GameManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-
-        gameSceneUIRef.UpdateMoney(money);
-        gameSceneUIRef.UpdateTurn(currentTurn);
-        gameSceneUIRef.UpdateGallons(totalGallons);
     }
 
     public void RegisterInteraction()
@@ -41,6 +33,7 @@ public class GameManager : MonoBehaviour
     {
         if (currentTurn <= maxTurns)
         {
+        
             // Accumulate barrels from all drilled lots
             int barrelsThisTurn = 0;
             foreach (Lot lot in producingLots)
@@ -48,13 +41,11 @@ public class GameManager : MonoBehaviour
                 barrelsThisTurn += lot.GetDailyProduction();
             }
 
-            if (barrelsThisTurn > 0)
-                AddToTanks(barrelsThisTurn * 42); // Assuming each barrel is 42 gallons
-            // Debug.Log($"Day {currentTurn}: +{barrelsThisTurn} barrels (Total: {totalGallons})");
+            totalBarrels += barrelsThisTurn;
+            Debug.Log($"Ending turn {currentTurn}. Money: {money}, Total Barrels: {totalBarrels}");
+            Debug.Log($"Day {currentTurn}: +{barrelsThisTurn} barrels (Total: {totalBarrels})");
 
             currentTurn++;
-            gameSceneUIRef.UpdateTurn(currentTurn);
-            gameSceneUIRef.UpdateGallons(totalGallons);
             hasInteractedThisTurn = false;
         }
         else
@@ -66,14 +57,11 @@ public class GameManager : MonoBehaviour
 
     public bool TrySpend(int amount)
     {
+        Debug.Log($"Trying to spend {amount}. Current money: {money}");
         if (money >= amount)
         {
             money -= amount;
-            gameSceneUIRef.UpdateMoney(money);
-            if (money < 10000)
-            {
-                gameSceneUIRef.DisableBuyTank();
-            }
+            Debug.Log($"After spending {amount}. Current money: {money}");
             return true;
         }
         return false;
@@ -82,11 +70,6 @@ public class GameManager : MonoBehaviour
     public void AddMoney(int amount)
     {
         money += amount;
-        gameSceneUIRef.UpdateMoney(money);
-        if (money >= 10000)
-        {
-            gameSceneUIRef.EnableBuyTank();
-        }
     }
 
     public void RegisterProducingLot(Lot lot)
@@ -95,59 +78,5 @@ public class GameManager : MonoBehaviour
         {
             producingLots.Add(lot);
         }
-    }
-
-    public void AddTank()
-    {
-        tanks.Add(660);
-    }
-
-    public void AddToTanks(int gallonsThisTurn)
-    {
-        Debug.Log($"Received {gallonsThisTurn} gallons today");
-
-        if (tanks.Count == 0)
-        {
-            Debug.Log($"Wasting {gallonsThisTurn} gallons — no tanks available");
-            return;
-        }
-
-        int gallonsRemaining = gallonsThisTurn;
-
-        for (int i = 0; i < tanks.Count; i++)
-        {
-            if (gallonsRemaining == 0)
-                break;
-
-            int capacity = tanks[i];
-            int toStore = Mathf.Min(gallonsRemaining, capacity);
-
-            tanks[i] -= toStore;
-            totalGallons += toStore;
-            gallonsRemaining -= toStore;
-
-            gameSceneUIRef.UpdateTankColor(tanks[i], i);
-
-            Debug.Log($"Stored {toStore} gallons in Tank {i + 1}");
-        }
-
-        if (gallonsRemaining > 0)
-        {
-            Debug.Log($"Wasting {gallonsRemaining} gallons — no space left in tanks");
-        }
-
-        PrintTanks();
-    }
-
-    
-    private void PrintTanks()
-    {
-        Debug.Log("Current Tanks Status:");
-        for (int i = 0; i < tanks.Count; i++)
-        {
-            int used = 660 - tanks[i];
-            Debug.Log($"Tank {i + 1}: {used} gallons stored, {tanks[i]} gallons remaining");
-        }
-        Debug.Log($"Total Gallons Stored: {totalGallons}\n");
     }
 }

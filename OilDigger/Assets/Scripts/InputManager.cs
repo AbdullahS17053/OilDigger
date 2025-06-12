@@ -21,14 +21,7 @@ public class InputManager : MonoBehaviour
                 Lot lot = hit.collider.GetComponent<Lot>();
                 if (lot != null)
                 {
-                    if (GameManager.Instance.isInteractionGoing)
-                    {
-                        if(lot.IsTurnGoing){
-                            lotUI.Show(lot, hit.collider.transform.position);
-                        }
-                    }
-                    else
-                        lotUI.Show(lot, hit.collider.transform.position);
+                    lotUI.Show(lot, hit.collider.transform.position);
                 }
             }
         }
