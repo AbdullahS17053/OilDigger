@@ -15,12 +15,14 @@ public class LotUI : MonoBehaviour
 
         currentLot = lot;
         panel.transform.position = Camera.main.WorldToScreenPoint(position);
+
         if(!lot.IsDrilled && !lot.IsSkipped)
             panel.SetActive(true);
         if(lot.IsDrilled || lot.IsSkipped)
             panel.SetActive(false);
-        surveyButton.gameObject.SetActive(!lot.IsSurveyed && !lot.IsDrilled && !lot.IsSkipped);
-        drillButton.gameObject.SetActive(!lot.IsDrilled && !lot.IsSkipped);
+
+        surveyButton.gameObject.SetActive(!lot.IsSurveyed && !lot.IsDrilled && !lot.IsSkipped && GameManager.Instance.Money >= 40000);
+        drillButton.gameObject.SetActive(!lot.IsDrilled && !lot.IsSkipped && GameManager.Instance.Money >= 250000);
         skipButton.gameObject.SetActive((lot.IsSurveyed && !lot.IsDrilled) || (!lot.IsSurveyed && !lot.IsDrilled));
     }
 
@@ -41,15 +43,15 @@ public class LotUI : MonoBehaviour
 
         drillButton.onClick.AddListener(() =>
         {
-            currentLot?.Drill();
-            GameManager.Instance.EndTurn();
+            if(currentLot.Drill())
+                GameManager.Instance.EndTurn();
             Hide();
         });
 
         skipButton.onClick.AddListener(() =>
         {
-            currentLot?.Skip();
-            GameManager.Instance.EndTurn();
+            if(currentLot.Skip())
+                GameManager.Instance.EndTurn();
             Hide();
         });
     }
