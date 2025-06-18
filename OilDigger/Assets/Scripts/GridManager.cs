@@ -43,7 +43,7 @@ public class GridManager : MonoBehaviour
                 if (lot != null)
                 {
                     int oilChance = Random.Range(0, 101);
-                    lot.Initialize(oilChance);
+                    // lot.Initialize(oilChance);
                     gridArray[x, y] = lot;
                 }
                 else

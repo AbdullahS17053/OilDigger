@@ -16,9 +16,9 @@ public class Lot : MonoBehaviour
     public int GetDailyProduction() => dailyProduction;
     public bool IsTurnGoing => isTurnGoing;
 
-    public void Initialize(int chance)
+    public void Awake()
     {
-        oilChance = chance;
+        oilChance = Random.Range(0, 101);
         float baseProduction = oilChance / 100f * 10f;
         int randomOffset = Random.Range(-3, 4);
         dailyProduction = Mathf.Clamp(Mathf.RoundToInt(baseProduction + randomOffset), 0, 10);
@@ -33,7 +33,7 @@ public class Lot : MonoBehaviour
         isSurveyed = true;
         isTurnGoing = true;
         GameManager.Instance.isInteractionGoing = true;
-        GetComponent<SpriteRenderer>().color = Color.green;
+        // GetComponent<SpriteRenderer>().color = Color.green;
 
         Debug.Log($"{name} surveyed. Oil chance: {oilChance}%");
         return true;
@@ -49,7 +49,7 @@ public class Lot : MonoBehaviour
         isTurnGoing = false;
         GameManager.Instance.isInteractionGoing = false;
 
-        GetComponent<SpriteRenderer>().color = Color.blue;
+        // GetComponent<SpriteRenderer>().color = Color.blue;
 
         GameManager.Instance.RegisterInteraction();
         if(IsProducing())
@@ -69,7 +69,7 @@ public class Lot : MonoBehaviour
         isTurnGoing = false;
         GameManager.Instance.isInteractionGoing = false;
 
-        GetComponent<SpriteRenderer>().color = Color.red;
+        // GetComponent<SpriteRenderer>().color = Color.red;
         GameManager.Instance.RegisterInteraction();
         Debug.Log($"{name} skipped.");
         return true;
