@@ -14,7 +14,7 @@ public class LotUI : MonoBehaviour
         if (GameManager.Instance.HasInteractedThisTurn) return;
 
         currentLot = lot;
-        panel.transform.position = Camera.main.WorldToScreenPoint(position);
+        panel.transform.position = position;
 
         if(!lot.IsDrilled && !lot.IsSkipped)
             panel.SetActive(true);
