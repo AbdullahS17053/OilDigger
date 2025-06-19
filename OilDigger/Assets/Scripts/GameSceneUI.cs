@@ -13,7 +13,13 @@ public class GameSceneUI : MonoBehaviour
     [SerializeField] private Button refineOilButton; // Button to open refine panel
     [SerializeField] private GameObject buyTankPanel; // Panel to show when buying tanks
     [SerializeField] private GameObject refinePanel; // Panel to show refining options
+    [SerializeField] private GameObject barrelsInputPanel; // Panel to input number of barrels
+
     [SerializeField] private GameObject barrelsPanel;
+    [SerializeField] private TMP_Text crudeOil; 
+    [SerializeField] private TMP_Text jetFuel; 
+    [SerializeField] private TMP_Text gasoline; 
+    [SerializeField] private TMP_Text diesel; 
 
     [SerializeField] private GameObject tankPrefab; // Prefab of UI Image
     [SerializeField] private Transform tankContainer; // Parent with Horizontal Layout
@@ -33,44 +39,44 @@ public class GameSceneUI : MonoBehaviour
 
     public void UpdateTurn(int turn)
     {
-        turnText.text = $"Turn: {turn}";
+        turnText.text = $"Day: {turn}";
     }
 
-    public void UpdateGallons(int amount)
+    public void ToggleBarrelsPanel()
     {
-        barrelsText.text = $"Gallons: {amount}";
-    }
+        barrelsPanel.SetActive(!barrelsPanel.activeInHierarchy);
 
-    public void OpenBuyTank()
-    {
-        buyTankPanel.SetActive(true);
         if (refinePanel.activeInHierarchy)
         {
             CloseRefine();
         }
-
-        if (barrelsPanel.activeInHierarchy)
-        {
-            CloseBarrelsInput();
-        }
     }
 
-    public void CloseBuyTank()
+    public void UpdateBarrelsPanel()
     {
-        buyTankPanel.SetActive(false);
+        int crudeOilBarrels = GameManager.Instance.GetGlobalCrudeOilTotal() / 42;
+        int gasolineBarrels = GameManager.Instance.GetGlobalGasolineTotal() / 42;
+        int dieselBarrels = GameManager.Instance.GetGlobalDieselTotal() / 42;
+        int jetFuelBarrels = GameManager.Instance.GetGlobalJetFuelTotal() / 42;
+
+        crudeOil.text = crudeOilBarrels.ToString();
+        gasoline.text = gasolineBarrels.ToString();
+        diesel.text = dieselBarrels.ToString();
+        jetFuel.text = jetFuelBarrels.ToString();
+    }
+    public void CloseBarrelsPanel()
+    {
+        barrelsPanel.SetActive(false);
     }
 
-    public void OpenRefine()
-    {
-        refinePanel.SetActive(true);
-        if (buyTankPanel.activeInHierarchy)
-        {
-            CloseBuyTank();
-        }
 
-        if (barrelsPanel.activeInHierarchy)
+    public void ToggleRefinePanel()
+    {
+        refinePanel.SetActive(!refinePanel.activeInHierarchy);
+
+        if (barrelsInputPanel.activeInHierarchy)
         {
-            CloseBarrelsInput();
+            CloseBarrelsPanel();
         }
     }
 
@@ -81,10 +87,10 @@ public class GameSceneUI : MonoBehaviour
 
     public void OpenBarrelsInput()
     {
-        barrelsPanel.SetActive(true);
-        if (buyTankPanel.activeInHierarchy)
+        barrelsInputPanel.SetActive(true); // Panel to input number of barrels.SetActive(true);
+        if(barrelsPanel.activeInHierarchy)
         {
-            CloseBuyTank();
+            CloseBarrelsPanel();
         }
 
         if (refinePanel.activeInHierarchy)
@@ -95,20 +101,19 @@ public class GameSceneUI : MonoBehaviour
 
     public void CloseBarrelsInput()
     {
-        barrelsPanel.SetActive(false);
+        barrelsInputPanel.SetActive(false); // Panel to input number of barrels.SetActive(false);
     }
 
     public void BuyTank(int _type)
     {
         if (!GameManager.Instance.TrySpend(10000))
         {
-            CloseBuyTank();
             return;
         }
 
-        TankType tankType = (TankType)_type;
+        // TankType tankType = (TankType)_type;
 
-        GameManager.Instance.AddTank(tankType);
+        GameManager.Instance.AddTank();
 
         GameObject tankObj = Instantiate(tankPrefab, tankContainer);
         Image img = tankObj.GetComponent<Image>();
@@ -166,6 +171,7 @@ public class GameSceneUI : MonoBehaviour
         {
             Debug.LogWarning("Invalid number of barrels entered!");
         }
+        barrelsInputPanel.SetActive(false); // Close the input panel after submission
     }
     public void DisableBuyTank()
     {

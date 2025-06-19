@@ -11,17 +11,46 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int currentTurn = 1;
     [SerializeField] private int money = 1000000;
     [SerializeField] private GameSceneUI gameSceneUIRef;
+    [SerializeField] private GameObject tankPrefab;
 
     private bool hasInteractedThisTurn = false;
     private List<Lot> producingLots = new List<Lot>();
-    private int totalGallons = 0;
-    public bool isInteractionGoing = false;
-    private List<Tank> tanks = new List<Tank>();
-    private int tankCapacity = 630; // Each tank can hold 660 gallons
+    private Dictionary<TankType, int> globalFuelTotals = new Dictionary<TankType, int>
+    {
+        { TankType.Crude_Oil, 0 },
+        { TankType.Gasoline, 0 },
+        { TankType.Diesel_Fuel, 0 },
+        { TankType.Jet_Fuel, 0 }
+    };
 
+    private List<Tank> tanks = new List<Tank>();
+    private int tankCapacity = 630;
+    public List<Transform> tankTransforms = new List<Transform>();
     public int CurrentTurn => currentTurn;
     public int Money => money;
+
+    public int GetGlobalCrudeOilTotal()
+    {
+        return globalFuelTotals[TankType.Crude_Oil];
+    }
+
+    public int GetGlobalGasolineTotal()
+    {
+        return globalFuelTotals[TankType.Gasoline];
+    }
+
+    public int GetGlobalDieselTotal()
+    {
+        return globalFuelTotals[TankType.Diesel_Fuel];
+    }
+
+    public int GetGlobalJetFuelTotal()
+    {
+        return globalFuelTotals[TankType.Jet_Fuel];
+    }
+
     public bool HasInteractedThisTurn => hasInteractedThisTurn;
+    public bool isInteractionGoing = false;
 
     private void Awake()
     {
@@ -30,7 +59,7 @@ public class GameManager : MonoBehaviour
 
         gameSceneUIRef.UpdateMoney(money);
         gameSceneUIRef.UpdateTurn(currentTurn);
-        gameSceneUIRef.UpdateGallons(totalGallons);
+        gameSceneUIRef.UpdateBarrelsPanel();
         tankCapacity = gameSceneUIRef.maxCapacity;
     }
 
@@ -43,28 +72,26 @@ public class GameManager : MonoBehaviour
     {
         if (currentTurn <= maxTurns)
         {
-            // Accumulate barrels from all drilled lots
-            int barrelsThisTurn = 0;
             foreach (Lot lot in producingLots)
             {
-                barrelsThisTurn += lot.GetDailyProduction();
+                int barrels = lot.GetDailyProduction();
+                if (barrels > 0)
+                {
+                    AddToTanks(barrels * 42, (int)TankType.Crude_Oil);
+                }
             }
-
-            if (barrelsThisTurn > 0)
-                AddToTanks(barrelsThisTurn * 42, 0); // Assuming each barrel is 42 gallons
-            // Debug.Log($"Day {currentTurn}: +{barrelsThisTurn} barrels (Total: {totalGallons})");
 
             currentTurn++;
             gameSceneUIRef.UpdateTurn(currentTurn);
-            gameSceneUIRef.UpdateGallons(totalGallons);
+            gameSceneUIRef.UpdateBarrelsPanel();
             hasInteractedThisTurn = false;
         }
         else
         {
             Debug.Log("Game Over");
-            // You can disable inputs or show game over screen here
         }
     }
+
 
     public bool TrySpend(int amount)
     {
@@ -72,15 +99,8 @@ public class GameManager : MonoBehaviour
         {
             money -= amount;
             gameSceneUIRef.UpdateMoney(money);
-            if (money < 10000)
-            {
-                gameSceneUIRef.DisableBuyTank();
-            }
-
-            if (money < 30)
-            {
-                gameSceneUIRef.DisableRefine();
-            }
+            if (money < 10000) gameSceneUIRef.DisableBuyTank();
+            if (money < 30) gameSceneUIRef.DisableRefine();
             return true;
         }
         return false;
@@ -90,140 +110,135 @@ public class GameManager : MonoBehaviour
     {
         money += amount;
         gameSceneUIRef.UpdateMoney(money);
-        if (money >= 10000)
-        {
-            gameSceneUIRef.EnableBuyTank();
-        }
-
-        if (money >= 30)
-        {
-            gameSceneUIRef.EnableRefine();
-        }
+        if (money >= 10000) gameSceneUIRef.EnableBuyTank();
+        if (money >= 30) gameSceneUIRef.EnableRefine();
     }
 
     public void RegisterProducingLot(Lot lot)
     {
         if (!producingLots.Contains(lot))
-        {
             producingLots.Add(lot);
+    }
+
+    public void AddTank()
+    {
+        Tank newTank = new Tank(tankCapacity);
+        tanks.Add(newTank);
+
+        if (tankTransforms == null || tankTransforms.Count == 0)
+        {
+            Debug.Log("Added new tank to list, but no transform available for placement.");
+            return;
+        }
+
+        Transform spawnPoint = tankTransforms[UnityEngine.Random.Range(0, tankTransforms.Count)];
+        if (spawnPoint != null)
+        {
+            GameObject tankInstance = Instantiate(tankPrefab, spawnPoint.position, spawnPoint.rotation);
+            tankTransforms.Remove(spawnPoint);
+            Debug.Log("Spawned new tank at position: " + spawnPoint.name);
+        }
+        else
+        {
+            Debug.LogWarning("Selected spawn point is null.");
         }
     }
 
-    public void AddTank(TankType type)
+    public bool AddToTanks(int gallonsThisTurn, int _type)
     {
-        Debug.Log("Adding new tank of type: " + type);
-        Tank newTank = new Tank(type, tankCapacity);
-        tanks.Add(newTank);
-    }
-
-    public void AddToTanks(int gallonsThisTurn, int _type)
-    {
-        TankType tankType = (TankType)_type;
-        Debug.Log($"Received {gallonsThisTurn} gallons for {tankType}");
+        TankType type = (TankType)_type;
+        Debug.Log($"Received {gallonsThisTurn} gallons of {type}");
 
         if (tanks.Count == 0)
         {
             Debug.Log($"Wasting {gallonsThisTurn} gallons — no tanks available");
-            return;
+            return false;
         }
 
         int gallonsRemaining = gallonsThisTurn;
 
-        if (tankType == TankType.Crude_Oil)
+        if (type != TankType.Crude_Oil)
         {
-            // Store normally in crude oil tanks
-            for (int i = 0; i < tanks.Count; i++)
+            if (globalFuelTotals[TankType.Crude_Oil] < gallonsThisTurn)
             {
-                Tank tank = tanks[i];
-
-                if (tank.Type != TankType.Crude_Oil)
-                    continue;
-
-                if (gallonsRemaining == 0)
-                    break;
-
-                int toStore = Mathf.Min(gallonsRemaining, tank.RemainingCapacity);
-
-                tank.RemainingCapacity -= toStore;
-                totalGallons += toStore;
-                gallonsRemaining -= toStore;
-
-                gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
-                Debug.Log($"Stored {toStore} gallons in Tank {i + 1} ({tank.Type})");
+                Debug.LogWarning($"Not enough Crude Oil to convert {gallonsThisTurn} gallons into {type}");
+                return false;
             }
 
-            if (gallonsRemaining > 0)
+            int required = gallonsThisTurn;
+            for (int i = tanks.Count - 1; i >= 0 && required > 0; i--)
             {
-                Debug.Log($"Wasting {gallonsRemaining} gallons — no space left in Crude Oil tanks");
+                Tank tank = tanks[i];
+                int available = tank.GetFuelAmount(TankType.Crude_Oil);
+                int extract = Mathf.Min(available, required);
+
+                if (extract > 0)
+                {
+                    tank.FuelStored[TankType.Crude_Oil] -= extract;
+                    tank.RemainingCapacity += extract;
+                    required -= extract;
+                    gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
+                    Debug.Log($"Extracted {extract} gallons of Crude Oil from Tank {i + 1}");
+                }
+            }
+
+            globalFuelTotals[TankType.Crude_Oil] -= gallonsThisTurn;
+        }
+
+        for (int i = 0; i < tanks.Count && gallonsRemaining > 0; i++)
+        {
+            Tank tank = tanks[i];
+            int toStore = Mathf.Min(gallonsRemaining, tank.RemainingCapacity);
+            if (toStore > 0)
+            {
+                tank.StoreFuel(type, toStore);
+                gallonsRemaining -= toStore;
+                globalFuelTotals[type] += toStore;
+                gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
+                Debug.Log($"Stored {toStore} gallons of {type} in Tank {i + 1}");
             }
         }
-        else
+
+        if (gallonsRemaining > 0)
         {
-            // Ensure we have enough crude oil to convert
-            if (totalGallons < gallonsThisTurn)
-            {
-                Debug.LogWarning($"Not enough Crude Oil to convert! Required: {gallonsThisTurn}, Available: {totalGallons}");
-                return;
-            }
-
-            // Add to desired type
-            for (int i = 0; i < tanks.Count; i++)
-            {
-                Tank tank = tanks[i];
-
-                if (tank.Type != tankType)
-                    continue;
-
-                if (gallonsRemaining == 0)
-                    break;
-
-                int toStore = Mathf.Min(gallonsRemaining, tank.RemainingCapacity);
-
-                tank.RemainingCapacity -= toStore;
-                gallonsRemaining -= toStore;
-
-                gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
-                Debug.Log($"Converted & stored {toStore} gallons into Tank {i + 1} ({tankType})");
-            }
-
-            if (gallonsRemaining > 0)
-            {
-                Debug.LogWarning($"Wasting {gallonsRemaining} gallons — not enough space in {tankType} tanks");
-            }
-
-            int usedGallons = gallonsThisTurn - gallonsRemaining;
-            totalGallons -= usedGallons;
-
-            // Recover crude oil capacity from last tanks (reverse)
-            for (int i = tanks.Count - 1; i >= 0 && usedGallons > 0; i--)
-            {
-                Tank tank = tanks[i];
-
-                if (tank.Type != TankType.Crude_Oil || tank.RemainingCapacity == tank.MaxCapacity)
-                    continue;
-
-                int usedInThis = Mathf.Min(tank.MaxCapacity - tank.RemainingCapacity, usedGallons);
-
-                tank.RemainingCapacity += usedInThis;
-                usedGallons -= usedInThis;
-
-                gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
-                Debug.Log($"Recovered {usedInThis} gallons in Crude Oil Tank {i + 1}");
-            }
+            Debug.LogWarning($"Wasting {gallonsRemaining} gallons of {type} — no space left in tanks");
         }
-        gameSceneUIRef.UpdateGallons(totalGallons);
-        PrintTanks();
+
+        gameSceneUIRef.UpdateBarrelsPanel();
+        // PrintTanks();
+        // PrintFuelSummary();
+        // Debug.Log($"Total Remaining Capacity: {totalRemaining} gallons");
+        return true;
     }
+
     private void PrintTanks()
     {
         Debug.Log("Current Tanks Status:");
         for (int i = 0; i < tanks.Count; i++)
         {
             Tank tank = tanks[i];
-            int used = tank.MaxCapacity - tank.RemainingCapacity;
-            Debug.Log($"Tank {i + 1} ({tank.Type}): {used} gallons stored, {tank.RemainingCapacity} gallons remaining");
+            Debug.Log($"Tank {i + 1}:");
+            foreach (var kvp in tank.FuelStored)
+            {
+                Debug.Log($"  - {kvp.Key}: {kvp.Value} gallons");
+            }
+            Debug.Log($"  Remaining Capacity: {tank.RemainingCapacity} gallons");
         }
-        Debug.Log($"Total Gallons Stored: {totalGallons}\n");
+    }
+
+    private void PrintFuelSummary()
+    {
+        Debug.Log("=== GLOBAL FUEL TOTALS ===");
+        int totalRemaining = 0;
+        foreach (var tank in tanks)
+        {
+            totalRemaining += tank.RemainingCapacity;
+        }
+        foreach (var kvp in globalFuelTotals)
+        {
+            Debug.Log($"- {kvp.Key}: {kvp.Value} gallons");
+        }
+        Debug.Log($"Total Remaining Capacity: {totalRemaining} gallons");
     }
 
 }
