@@ -17,13 +17,13 @@ public class CameraController : MonoBehaviour
     void Update()
     {
         
-         if (Input.GetMouseButtonDown(0)) // Right mouse button pressed
+         if (Input.GetMouseButtonDown(1)) // Right mouse button pressed
         {
-            Debug.Log("CameraController Update called");
+            // Debug.Log("CameraController Update called");
             lastMousePosition = Input.mousePosition;
         }
 
-        if (Input.GetMouseButton(0)) // Right mouse button held
+        if (Input.GetMouseButton(1)) // Right mouse button held
         {
             Vector3 delta = Input.mousePosition - lastMousePosition;
 

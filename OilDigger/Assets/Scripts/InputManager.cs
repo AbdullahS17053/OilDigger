@@ -24,9 +24,10 @@ public class InputManager : MonoBehaviour
         Ray ray = mainCamera.ScreenPointToRay(screenPosition);
         if (Physics.Raycast(ray, out RaycastHit hit))
         {
+
             if (hit.collider.CompareTag("lot"))
             {
-                Debug.Log("Lot selected: " + hit.collider.name);
+                // Debug.Log("Lot selected: " + hit.collider.name);
                 Lot lot = hit.collider.GetComponent<Lot>();
                 Vector3 offsetPoint = hit.point + new Vector3(0, 0.5f, 0); // raise the UI a bit
                 Vector2 screenPos = mainCamera.WorldToScreenPoint(offsetPoint);

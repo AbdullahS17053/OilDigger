@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum TankType
@@ -10,17 +11,29 @@ public enum TankType
 
 public class Tank
 {
-    public TankType Type { get; private set; }
     public int MaxCapacity { get; private set; }
     public int RemainingCapacity { get; set; }
+// New: track how many gallons of each type this tank holds
+    public Dictionary<TankType, int> FuelStored { get; private set; }
 
-    public Tank(TankType _type, int _maxCapacity)
+    public Tank(int maxCapacity)
     {
-        Type = _type;
-        MaxCapacity = _maxCapacity;
-        RemainingCapacity = _maxCapacity;
-
+        MaxCapacity = maxCapacity;
+        RemainingCapacity = maxCapacity;
+        FuelStored = new Dictionary<TankType, int>();
     }
 
-    public int GallonsStored => MaxCapacity - RemainingCapacity;
+    public void StoreFuel(TankType type, int gallons)
+    {
+        if (!FuelStored.ContainsKey(type))
+            FuelStored[type] = 0;
+
+        FuelStored[type] += gallons;
+        RemainingCapacity -= gallons;
+    }
+
+    public int GetFuelAmount(TankType type)
+    {
+        return FuelStored.TryGetValue(type, out int value) ? value : 0;
+    }
 }
