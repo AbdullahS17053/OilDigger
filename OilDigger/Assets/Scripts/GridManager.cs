@@ -5,7 +5,7 @@ public class GridManager : MonoBehaviour
     [Header("Grid Settings")]
     [SerializeField] private int rows = 6;
     [SerializeField] private int columns = 5;
-    [SerializeField] private float tileSpacing = 1f;
+    [SerializeField] private float tileSpacing = 10f;
 
     [Header("Lot Prefab")]
     [SerializeField] private GameObject lotPrefab;
@@ -27,14 +27,19 @@ public class GridManager : MonoBehaviour
 
         gridArray = new Lot[columns, rows];
 
-        Vector2 startPosition = new Vector2(-(columns / 2f), rows / 2f);
+        // Offset to center the grid
+        float offsetX = (columns - 1) * tileSpacing * 0.5f;
+        float offsetZ = (rows - 1) * tileSpacing * 0.5f;
 
         for (int y = 0; y < rows; y++)
         {
             for (int x = 0; x < columns; x++)
             {
-                Vector2 spawnPos = new Vector2(x * tileSpacing, -y * tileSpacing);
-                Vector2 worldPos = startPosition + spawnPos;
+                Vector3 worldPos = new Vector3(
+                    x * tileSpacing - offsetX,
+                    0f,
+                    y * tileSpacing - offsetZ
+                );
 
                 GameObject lotObj = Instantiate(lotPrefab, worldPos, Quaternion.identity, transform);
                 lotObj.name = $"Lot_{x}_{y}";
