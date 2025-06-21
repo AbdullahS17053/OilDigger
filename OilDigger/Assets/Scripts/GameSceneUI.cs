@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -16,10 +17,13 @@ public class GameSceneUI : MonoBehaviour
     [SerializeField] private GameObject barrelsInputPanel; // Panel to input number of barrels
 
     [SerializeField] private GameObject barrelsPanel;
-    [SerializeField] private TMP_Text crudeOil; 
-    [SerializeField] private TMP_Text jetFuel; 
-    [SerializeField] private TMP_Text gasoline; 
-    [SerializeField] private TMP_Text diesel; 
+    [SerializeField] private GameObject buyTankFeedbackPanel; // Panel to show feedback after buying a tank
+    [SerializeField] private TMP_Text buyTankFeedbackMsg; // Panel to show feedback after buying a tank
+    [SerializeField] private TMP_Text crudeOil;
+    [SerializeField] private TMP_Text jetFuel;
+    [SerializeField] private TMP_Text gasoline;
+    [SerializeField] private TMP_Text diesel;
+    [SerializeField] private TMP_Text capacityText; // Text to show tank capacity
 
     [SerializeField] private GameObject tankPrefab; // Prefab of UI Image
     [SerializeField] private Transform tankContainer; // Parent with Horizontal Layout
@@ -64,6 +68,11 @@ public class GameSceneUI : MonoBehaviour
         diesel.text = dieselBarrels.ToString();
         jetFuel.text = jetFuelBarrels.ToString();
     }
+
+    public void UpdateBarrelCapacity(int _capacity)
+    {
+        capacityText.text = _capacity.ToString();
+    }
     public void CloseBarrelsPanel()
     {
         barrelsPanel.SetActive(false);
@@ -88,7 +97,7 @@ public class GameSceneUI : MonoBehaviour
     public void OpenBarrelsInput()
     {
         barrelsInputPanel.SetActive(true); // Panel to input number of barrels.SetActive(true);
-        if(barrelsPanel.activeInHierarchy)
+        if (barrelsPanel.activeInHierarchy)
         {
             CloseBarrelsPanel();
         }
@@ -106,36 +115,26 @@ public class GameSceneUI : MonoBehaviour
 
     public void BuyTank(int _type)
     {
+        buyTankFeedbackPanel.SetActive(true);
         if (!GameManager.Instance.TrySpend(10000))
         {
+            buyTankFeedbackMsg.text = "Error!";
+            Invoke("closeFeedbackPanel", 1f);
             return;
         }
 
         // TankType tankType = (TankType)_type;
 
         GameManager.Instance.AddTank();
+        buyTankFeedbackMsg.text = "Tank Added!";
+        Invoke("closeFeedbackPanel", 0.5f);
 
-        GameObject tankObj = Instantiate(tankPrefab, tankContainer);
-        Image img = tankObj.GetComponent<Image>();
-        Color tankColor = Color.white;
-        switch (_type)
-        {
-            case 0:
-                tankColor = Color.black;
-                break;
-            case 1:
-                tankColor = Color.cyan;
-                break;
-            case 2:
-                tankColor = Color.yellow;
-                break;
-            case 3:
-                tankColor = Color.blue;
-                break;
-        }
+    }
 
-        img.color = tankColor;
-        tankImages.Add(img);
+    void closeFeedbackPanel()
+    {
+        Debug.Log("Closing feedback panel");
+        buyTankFeedbackPanel.SetActive(false);
     }
 
     public void RefineOil(int _type)
@@ -192,13 +191,13 @@ public class GameSceneUI : MonoBehaviour
     }
 
 
-    public void UpdateTankColor(int remaining, int index)
-    {
-        Image img = tankImages[index];
+    // public void UpdateTankColor(int remaining, int index)
+    // {
+    //     Image img = tankImages[index];
 
-        if (remaining == 630)
-            img.color = Color.white; // Empty
-        else if (remaining == 0)
-            img.color = Color.red; // Full
-    }
+    //     if (remaining == 630)
+    //         img.color = Color.white; // Empty
+    //     else if (remaining == 0)
+    //         img.color = Color.red; // Full
+    // }
 }

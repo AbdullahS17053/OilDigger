@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour
 
     private List<Tank> tanks = new List<Tank>();
     private int tankCapacity = 630;
+    private int remainingCapacity = 0;
     public List<Transform> tankTransforms = new List<Transform>();
     public int CurrentTurn => currentTurn;
     public int Money => money;
@@ -142,6 +143,9 @@ public class GameManager : MonoBehaviour
         {
             Debug.LogWarning("Selected spawn point is null.");
         }
+
+        remainingCapacity += tankCapacity / 42;
+        gameSceneUIRef.UpdateBarrelCapacity(remainingCapacity);
     }
 
     public bool AddToTanks(int gallonsThisTurn, int _type)
@@ -177,7 +181,7 @@ public class GameManager : MonoBehaviour
                     tank.FuelStored[TankType.Crude_Oil] -= extract;
                     tank.RemainingCapacity += extract;
                     required -= extract;
-                    gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
+                    // gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
                     Debug.Log($"Extracted {extract} gallons of Crude Oil from Tank {i + 1}");
                 }
             }
@@ -194,7 +198,7 @@ public class GameManager : MonoBehaviour
                 tank.StoreFuel(type, toStore);
                 gallonsRemaining -= toStore;
                 globalFuelTotals[type] += toStore;
-                gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
+                // gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
                 Debug.Log($"Stored {toStore} gallons of {type} in Tank {i + 1}");
             }
         }
@@ -205,10 +209,22 @@ public class GameManager : MonoBehaviour
         }
 
         gameSceneUIRef.UpdateBarrelsPanel();
+        remainingCapacity = RecalculateTotalBarrelCapacity();
+        gameSceneUIRef.UpdateBarrelCapacity(remainingCapacity);
         // PrintTanks();
         // PrintFuelSummary();
         // Debug.Log($"Total Remaining Capacity: {totalRemaining} gallons");
         return true;
+    }
+
+    private int RecalculateTotalBarrelCapacity()
+    {
+        int totalGallons = 0;
+        foreach (var tank in tanks)
+        {
+            totalGallons += tank.RemainingCapacity;
+        }
+        return totalGallons / 42;
     }
 
     private void PrintTanks()
