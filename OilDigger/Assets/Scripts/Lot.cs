@@ -3,7 +3,7 @@ using UnityEngine;
 public class Lot : MonoBehaviour
 {
     private int oilChance;
-    private int dailyProduction =0;
+    private int dailyProduction = 0;
     private bool isSurveyed = false;
     private bool isDrilled = false;
     private bool isSkipped = false;
@@ -52,9 +52,16 @@ public class Lot : MonoBehaviour
         // GetComponent<SpriteRenderer>().color = Color.blue;
 
         GameManager.Instance.RegisterInteraction();
-        if(IsProducing())
+        if (IsProducing())
         {
             GameManager.Instance.RegisterProducingLot(this);
+        }
+
+        // Enable the "Drill" child object
+        Transform drillChild = transform.Find("Drill");
+        if (drillChild != null)
+        {
+            drillChild.gameObject.SetActive(true);
         }
 
         Debug.Log($"{name} drilled. Producing {dailyProduction} barrels/day.");
@@ -69,6 +76,12 @@ public class Lot : MonoBehaviour
         isTurnGoing = false;
         GameManager.Instance.isInteractionGoing = false;
 
+        // Enable the "Skip" child object
+        Transform skipChild = transform.Find("Skip");
+        if (skipChild != null)
+        {
+            skipChild.gameObject.SetActive(true);
+        }
         // GetComponent<SpriteRenderer>().color = Color.red;
         GameManager.Instance.RegisterInteraction();
         Debug.Log($"{name} skipped.");
