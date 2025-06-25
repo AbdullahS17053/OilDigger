@@ -7,17 +7,10 @@ public class CameraController : MonoBehaviour
 
     private Vector3 lastMousePosition;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
     // Update is called once per frame
     void Update()
     {
-        
-         if (Input.GetMouseButtonDown(1)) // Right mouse button pressed
+        if (Input.GetMouseButtonDown(1)) // Right mouse button pressed
         {
             // Debug.Log("CameraController Update called");
             lastMousePosition = Input.mousePosition;
