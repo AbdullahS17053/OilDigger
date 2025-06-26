@@ -2,13 +2,15 @@ using UnityEngine;
 
 public class Lot : MonoBehaviour
 {
+    #region Variables
     private int oilChance;
     private int dailyProduction = 0;
     private bool isSurveyed = false;
     private bool isDrilled = false;
     private bool isSkipped = false;
     private bool isTurnGoing = false;
-
+    #endregion
+    #region Properties
     public bool IsSurveyed => isSurveyed;
     public bool IsDrilled => isDrilled;
     public bool IsSkipped => isSkipped;
@@ -24,6 +26,8 @@ public class Lot : MonoBehaviour
         dailyProduction = Mathf.Clamp(Mathf.RoundToInt(baseProduction + randomOffset), 0, 10);
     }
 
+    #endregion
+    #region Methods
     public bool Survey()
     {
         if (isSurveyed || isDrilled || GameManager.Instance.HasInteractedThisTurn) return false;
@@ -54,7 +58,7 @@ public class Lot : MonoBehaviour
         GameManager.Instance.RegisterInteraction();
         if (IsProducing())
         {
-            GameManager.Instance.RegisterProducingLot(this);
+            TankManager.Instance.RegisterProducingLot(this);
         }
 
         // Enable the "Drill" child object
@@ -87,4 +91,6 @@ public class Lot : MonoBehaviour
         Debug.Log($"{name} skipped.");
         return true;
     }
+
+    #endregion
 }

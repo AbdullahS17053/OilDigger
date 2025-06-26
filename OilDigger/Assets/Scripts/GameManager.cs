@@ -11,97 +11,52 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int currentTurn = 1;
     [SerializeField] private int money = 1000000;
     [SerializeField] private GameSceneUI gameSceneUIRef;
-    [SerializeField] private GameObject tankPrefab;
+    [SerializeField] private TankManager tankManagerRef;
 
+    #region Vars & Lists
     private bool hasInteractedThisTurn = false;
-    private List<Lot> producingLots = new List<Lot>();
-    private Dictionary<TankType, int> globalFuelTotals = new Dictionary<TankType, int>
-    {
-        { TankType.Crude_Oil, 0 },
-        { TankType.Gasoline, 0 },
-        { TankType.Diesel_Fuel, 0 },
-        { TankType.Jet_Fuel, 0 }
-    };
-
-    private List<Tank> tanks = new List<Tank>();
-    private int tankCapacity = 630;
-    private int remainingCapacity = 0;
-    public List<Transform> tankTransforms = new List<Transform>();
-    public int CurrentTurn => currentTurn;
-    public int Money => money;
-
-    public int GetGlobalCrudeOilTotal()
-    {
-        return globalFuelTotals[TankType.Crude_Oil];
-    }
-
-    public int GetGlobalGasolineTotal()
-    {
-        return globalFuelTotals[TankType.Gasoline];
-    }
-
-    public int GetGlobalDieselTotal()
-    {
-        return globalFuelTotals[TankType.Diesel_Fuel];
-    }
-
-    public int GetGlobalJetFuelTotal()
-    {
-        return globalFuelTotals[TankType.Jet_Fuel];
-    }
-
-    public bool HasInteractedThisTurn => hasInteractedThisTurn;
     public bool isInteractionGoing = false;
 
+    private int[] crudeOilFluctuations = new int[30];
+    private int[] gasolineFluctuations = new int[30];
+    private int[] jetFuelFluctuations = new int[30];
+    private int[] dieselFluctuations = new int[30];
+
+    private int curdeOilCP;
+    private int gasolineCP;
+    private int jetFuelCP;
+    private int dieselCP;
+    private HashSet<int> selectedDays = new HashSet<int>();
+    #endregion
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-
+        curdeOilCP = gameSceneUIRef.curdeOilIP;
+        gasolineCP = gameSceneUIRef.gasolineIP;
+        jetFuelCP = gameSceneUIRef.jetFuelIP;
+        dieselCP = gameSceneUIRef.dieselIP;
         gameSceneUIRef.UpdateMoney(money);
-        gameSceneUIRef.UpdateTurn(currentTurn);
+        gameSceneUIRef.UpdateDay(currentTurn);
         gameSceneUIRef.UpdateBarrelsPanel();
-        tankCapacity = gameSceneUIRef.maxCapacity;
     }
+
+    #region Getters & Setters
+    public int CurrentTurn => currentTurn;
+    public int Money => money;
+    public bool HasInteractedThisTurn => hasInteractedThisTurn;
 
     public void RegisterInteraction()
     {
         hasInteractedThisTurn = true;
+        isInteractionGoing = false;
     }
-
-    public void EndTurn()
-    {
-        if (currentTurn <= maxTurns)
-        {
-            foreach (Lot lot in producingLots)
-            {
-                int barrels = lot.GetDailyProduction();
-                if (barrels > 0)
-                {
-                    AddToTanks(barrels * 42, (int)TankType.Crude_Oil);
-                }
-            }
-
-            currentTurn++;
-            gameSceneUIRef.UpdateTurn(currentTurn);
-            gameSceneUIRef.UpdateBarrelsPanel();
-            hasInteractedThisTurn = false;
-        }
-        else
-        {
-            Debug.Log("Game Over");
-        }
-    }
-
-
     public bool TrySpend(int amount)
     {
         if (money >= amount)
         {
             money -= amount;
-            gameSceneUIRef.UpdateMoney(money);
-            if (money < 10000) gameSceneUIRef.DisableBuyTank();
-            if (money < 30) gameSceneUIRef.DisableRefine();
+            UpdateMoney();
             return true;
         }
         return false;
@@ -110,151 +65,121 @@ public class GameManager : MonoBehaviour
     public void AddMoney(int amount)
     {
         money += amount;
+        UpdateMoney();
+    }
+
+    private void UpdateMoney()
+    {
         gameSceneUIRef.UpdateMoney(money);
         if (money >= 10000) gameSceneUIRef.EnableBuyTank();
+        else gameSceneUIRef.DisableBuyTank();
         if (money >= 30) gameSceneUIRef.EnableRefine();
+        else gameSceneUIRef.DisableRefine();
     }
 
-    public void RegisterProducingLot(Lot lot)
+    #endregion
+
+    public void EndTurn()
     {
-        if (!producingLots.Contains(lot))
-            producingLots.Add(lot);
-    }
-
-    public void AddTank()
-    {
-        Tank newTank = new Tank(tankCapacity);
-        tanks.Add(newTank);
-
-        if (tankTransforms == null || tankTransforms.Count == 0)
+        if (currentTurn <= maxTurns)
         {
-            Debug.Log("Added new tank to list, but no transform available for placement.");
-            return;
-        }
+            tankManagerRef.EndDay(currentTurn);
+            UpdatePrices(currentTurn);
 
-        Transform spawnPoint = tankTransforms[UnityEngine.Random.Range(0, tankTransforms.Count)];
-        if (spawnPoint != null)
-        {
-            GameObject tankInstance = Instantiate(tankPrefab, spawnPoint.position, spawnPoint.rotation);
-            tankTransforms.Remove(spawnPoint);
-            Debug.Log("Spawned new tank at position: " + spawnPoint.name);
+            currentTurn++;
+            gameSceneUIRef.UpdateDay(currentTurn);
+            gameSceneUIRef.UpdateBarrelsPanel();
+            hasInteractedThisTurn = false;
         }
         else
         {
-            Debug.LogWarning("Selected spawn point is null.");
+            Debug.Log("Game Over");
         }
-
-        remainingCapacity += tankCapacity / 42;
-        gameSceneUIRef.UpdateBarrelCapacity(remainingCapacity);
     }
-
-    public bool AddToTanks(int gallonsThisTurn, int _type)
+    public void UpdateFluctuations()
     {
-        TankType type = (TankType)_type;
-        Debug.Log($"Received {gallonsThisTurn} gallons of {type}");
+        System.Random rand = new System.Random(DateTime.Now.Millisecond);
 
-        if (tanks.Count == 0)
+        // Step 1: Base random values between -10 to 10 for each day
+        for (int i = 0; i < 30; i++)
         {
-            Debug.Log($"Wasting {gallonsThisTurn} gallons — no tanks available");
-            return false;
+            crudeOilFluctuations[i] = rand.Next(-10, 11);
+            gasolineFluctuations[i] = rand.Next(-10, 11);
+            jetFuelFluctuations[i] = rand.Next(-10, 11);
+            dieselFluctuations[i] = rand.Next(-10, 11);
         }
 
-        int gallonsRemaining = gallonsThisTurn;
+        // Step 2: Market event spikes between -40 to 40
+        int minEventDays = 1;
+        int maxEventDays = 5;
+        int nMarketEvents = rand.Next(minEventDays, maxEventDays + 1);
 
-        if (type != TankType.Crude_Oil)
+        selectedDays = new HashSet<int>();
+        while (selectedDays.Count < nMarketEvents)
         {
-            if (globalFuelTotals[TankType.Crude_Oil] < gallonsThisTurn)
-            {
-                Debug.LogWarning($"Not enough Crude Oil to convert {gallonsThisTurn} gallons into {type}");
-                return false;
-            }
-
-            int required = gallonsThisTurn;
-            for (int i = tanks.Count - 1; i >= 0 && required > 0; i--)
-            {
-                Tank tank = tanks[i];
-                int available = tank.GetFuelAmount(TankType.Crude_Oil);
-                int extract = Mathf.Min(available, required);
-
-                if (extract > 0)
-                {
-                    tank.FuelStored[TankType.Crude_Oil] -= extract;
-                    tank.RemainingCapacity += extract;
-                    required -= extract;
-                    // gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
-                    Debug.Log($"Extracted {extract} gallons of Crude Oil from Tank {i + 1}");
-                }
-            }
-
-            globalFuelTotals[TankType.Crude_Oil] -= gallonsThisTurn;
+            selectedDays.Add(rand.Next(0, 30)); // Ensures unique days
         }
 
-        for (int i = 0; i < tanks.Count && gallonsRemaining > 0; i++)
+        foreach (int day in selectedDays)
         {
-            Tank tank = tanks[i];
-            int toStore = Mathf.Min(gallonsRemaining, tank.RemainingCapacity);
-            if (toStore > 0)
-            {
-                tank.StoreFuel(type, toStore);
-                gallonsRemaining -= toStore;
-                globalFuelTotals[type] += toStore;
-                // gameSceneUIRef.UpdateTankColor(tank.RemainingCapacity, i);
-                Debug.Log($"Stored {toStore} gallons of {type} in Tank {i + 1}");
-            }
+            crudeOilFluctuations[day] = rand.Next(-40, 41);
+            gasolineFluctuations[day] = rand.Next(-40, 41);
+            jetFuelFluctuations[day] = rand.Next(-40, 41);
+            dieselFluctuations[day] = rand.Next(-40, 41);
         }
-
-        if (gallonsRemaining > 0)
-        {
-            Debug.LogWarning($"Wasting {gallonsRemaining} gallons of {type} — no space left in tanks");
-        }
-
-        gameSceneUIRef.UpdateBarrelsPanel();
-        remainingCapacity = RecalculateTotalBarrelCapacity();
-        gameSceneUIRef.UpdateBarrelCapacity(remainingCapacity);
-        // PrintTanks();
-        // PrintFuelSummary();
-        // Debug.Log($"Total Remaining Capacity: {totalRemaining} gallons");
-        return true;
     }
 
-    private int RecalculateTotalBarrelCapacity()
+    public void UpdatePrices(int currentDay)
     {
-        int totalGallons = 0;
-        foreach (var tank in tanks)
-        {
-            totalGallons += tank.RemainingCapacity;
-        }
-        return totalGallons / 42;
-    }
+        int crudeOilC = crudeOilFluctuations[currentDay];
+        int gasolineC = gasolineFluctuations[currentDay];
+        int jetFuelC = jetFuelFluctuations[currentDay];
+        int dieselC = dieselFluctuations[currentDay];
+        string crudeOilChange = crudeOilC > 0 ? $"+{crudeOilC}" : $"{crudeOilC}";
+        string gasolineChange = gasolineC > 0 ? $"+{gasolineC}" : $"{gasolineC}";
+        string jetFuelChange = jetFuelC > 0 ? $"+{jetFuelC}" : $"{jetFuelC}";
+        string dieselChange = dieselC > 0 ? $"+{dieselC}" : $"{dieselC}";
 
-    private void PrintTanks()
-    {
-        Debug.Log("Current Tanks Status:");
-        for (int i = 0; i < tanks.Count; i++)
+        gameSceneUIRef.UpdateMarketChange(0, crudeOilChange);
+        gameSceneUIRef.UpdateMarketChange(1, gasolineChange);
+        gameSceneUIRef.UpdateMarketChange(2, jetFuelChange);
+        gameSceneUIRef.UpdateMarketChange(3, dieselChange);
+
+        if (crudeOilC != 0)
+            curdeOilCP += (int)((float)crudeOilC / 100f * curdeOilCP);
+
+        if (gasolineC != 0)
+            gasolineCP += (int)((float)gasolineC / 100f * gasolineCP);
+
+        if (jetFuelC != 0)
+            jetFuelCP += (int)((float)jetFuelC / 100f * jetFuelCP);
+
+        if (dieselC != 0)
+            dieselCP += (int)((float)dieselC / 100f * dieselCP);
+
+        curdeOilCP = Mathf.Max(curdeOilCP, gameSceneUIRef.curdeOilIP);
+        gasolineCP = Mathf.Max(gasolineCP, gameSceneUIRef.gasolineIP);
+        jetFuelCP = Mathf.Max(jetFuelCP, gameSceneUIRef.jetFuelIP);
+        dieselCP = Mathf.Max(dieselCP, gameSceneUIRef.dieselIP);
+
+        gameSceneUIRef.UpdateMarketPrices(0, curdeOilCP);
+        gameSceneUIRef.UpdateMarketPrices(1, gasolineCP);
+        gameSceneUIRef.UpdateMarketPrices(2, jetFuelCP);
+        gameSceneUIRef.UpdateMarketPrices(3, dieselCP);
+
+        string maxChange = "+- 10%";
+        string marketEventText = "";
+        foreach (int day in selectedDays)
         {
-            Tank tank = tanks[i];
-            Debug.Log($"Tank {i + 1}:");
-            foreach (var kvp in tank.FuelStored)
+            if (currentDay - 1 == day)
             {
-                Debug.Log($"  - {kvp.Key}: {kvp.Value} gallons");
+                maxChange = "+- 40%";
+                marketEventText = "Market Event!";
+
             }
-            Debug.Log($"  Remaining Capacity: {tank.RemainingCapacity} gallons");
         }
+        
+        gameSceneUIRef.UpdateMarketEventText(marketEventText);
+        gameSceneUIRef.UpdateMaxChange(maxChange);
     }
-
-    private void PrintFuelSummary()
-    {
-        Debug.Log("=== GLOBAL FUEL TOTALS ===");
-        int totalRemaining = 0;
-        foreach (var tank in tanks)
-        {
-            totalRemaining += tank.RemainingCapacity;
-        }
-        foreach (var kvp in globalFuelTotals)
-        {
-            Debug.Log($"- {kvp.Key}: {kvp.Value} gallons");
-        }
-        Debug.Log($"Total Remaining Capacity: {totalRemaining} gallons");
-    }
-
 }

@@ -16,9 +16,9 @@ public class LotUI : MonoBehaviour
         currentLot = lot;
         panel.transform.position = position;
 
-        if(!lot.IsDrilled && !lot.IsSkipped)
+        if (!lot.IsDrilled && !lot.IsSkipped)
             panel.SetActive(true);
-        if(lot.IsDrilled || lot.IsSkipped)
+        if (lot.IsDrilled || lot.IsSkipped)
             panel.SetActive(false);
 
         surveyButton.gameObject.SetActive(!lot.IsSurveyed && !lot.IsDrilled && !lot.IsSkipped && GameManager.Instance.Money >= 40000);
@@ -34,25 +34,26 @@ public class LotUI : MonoBehaviour
     private void Start()
     {
         panel.SetActive(false);
+    }
 
-        surveyButton.onClick.AddListener(() =>
-        {
-            currentLot?.Survey();
-            Hide();
-        });
+    public void Survey()
+    {
+        if (currentLot.Survey())
+            Debug.Log("Surveyed");
+        Hide();
+    }
 
-        drillButton.onClick.AddListener(() =>
-        {
-            if(currentLot.Drill())
-                GameManager.Instance.EndTurn();
-            Hide();
-        });
+    public void Drill()
+    {
+        if (currentLot.Drill())
+            GameManager.Instance.EndTurn();
+        Hide();
+    }
 
-        skipButton.onClick.AddListener(() =>
-        {
-            if(currentLot.Skip())
-                GameManager.Instance.EndTurn();
-            Hide();
-        });
+    public void Skip()
+    {
+        if (currentLot.Skip())
+            GameManager.Instance.EndTurn();
+        Hide();
     }
 }
