@@ -16,6 +16,9 @@ public class Tank
 // New: track how many gallons of each type this tank holds
     public Dictionary<TankType, int> FuelStored { get; private set; }
 
+    public GameObject VisualInstance;   
+    public Transform AssignedSpawnPoint;
+
     public Tank(int maxCapacity)
     {
         MaxCapacity = maxCapacity;

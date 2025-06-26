@@ -22,6 +22,7 @@ public class GridManager : MonoBehaviour
         GenerateGrid();
     }
 
+    #region Grid Generation
     private void GenerateGrid()
     {
         if (lotPrefab == null)
@@ -51,7 +52,6 @@ public class GridManager : MonoBehaviour
                     y * verticalSpacing - offsetZ
                 );
 
-                // int angle = Random.value < 0.5f ? 90 : 270;
                 GameObject lotObj = Instantiate(lotPrefab, worldPos, Quaternion.Euler(0, 90, 0), transform);
                 lotObj.name = $"Lot_{x}_{y}";
 
@@ -59,7 +59,6 @@ public class GridManager : MonoBehaviour
                 if (lot != null)
                 {
                     int oilChance = Random.Range(0, 101);
-                    // lot.Initialize(oilChance);
                     gridArray[x, y] = lot;
                 }
 
@@ -70,6 +69,8 @@ public class GridManager : MonoBehaviour
         }
 
     }
+    #endregion
+    #region Prop Spawning
     private void TrySpawnProp(GameObject lotObj)
     {
         if (prefabsToSpawn.Length == 0) return;
@@ -115,17 +116,20 @@ public class GridManager : MonoBehaviour
         else return 3;                    // 10% chance: 3 props
     }
 
+    #endregion
+
+    #region Tank Position Registration
     private void RegisterTankPositions(GameObject lotObj)
     {
-        if (GameManager.Instance == null)
+        if (TankManager.Instance == null)
         {
             Debug.LogError("GameManager instance not found.");
             return;
         }
 
-        if (GameManager.Instance.tankTransforms == null)
+        if (TankManager.Instance.tankTransforms == null)
         {
-            GameManager.Instance.tankTransforms = new List<Transform>();
+            TankManager.Instance.tankTransforms = new List<Transform>();
         }
 
         Transform tankParent = lotObj.transform.Find("Tank Positions");
@@ -140,7 +144,7 @@ public class GridManager : MonoBehaviour
             Transform tankPos = tankParent.Find($"Tank_{i}");
             if (tankPos != null)
             {
-                GameManager.Instance.tankTransforms.Add(tankPos);
+                TankManager.Instance.tankTransforms.Add(tankPos);
             }
             else
             {
@@ -148,5 +152,5 @@ public class GridManager : MonoBehaviour
             }
         }
     }
-
+    #endregion
 }
