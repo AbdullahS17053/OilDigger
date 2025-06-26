@@ -24,6 +24,28 @@ public class TankManager : MonoBehaviour
     public List<Transform> tankTransforms = new List<Transform>();
     private List<int> weatherEventDays = new List<int>();
     private List<int> drillMalDays = new List<int>();
+  
+    public Dictionary<int, List<string>> notificationDays = new();
+    private List<string> weatherEvents = new List<string>
+    {
+        "Hurricane",
+        "Tornado",
+        "Flood",
+        "Blizzard",
+        "Heatwave"
+    };
+
+    private int weatherNotificationIndex = 0;
+    private int weatherEventIndex = 0;
+
+    private List<string> notificationMessages = new List<string>();
+    public List<string> notfiMessagesSuffix = new List<string>
+    {
+        " in coming days",
+        " in the near future",
+        " soon",
+        " in this week"
+    };
     public int RemainingCapacity { get; private set; }
 
     void Awake()
@@ -33,6 +55,18 @@ public class TankManager : MonoBehaviour
 
         GenerateWeatherEventDays();
         GenerateDrillMalfunctionDays();
+        ShuffleWeatherEvents();
+    }
+    private void ShuffleWeatherEvents()
+    {
+        for (int i = weatherEvents.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            string temp = weatherEvents[i];
+            weatherEvents[i] = weatherEvents[j];
+            weatherEvents[j] = temp;
+        }
+        // Debug.Log("Weather Events shuffled.");
     }
     private void GenerateWeatherEventDays()
     {
@@ -41,12 +75,37 @@ public class TankManager : MonoBehaviour
 
         while (uniqueDays.Count < numEvents)
         {
-            int day = Random.Range(0, 30);
+            int day = Random.Range(6, 30);
             uniqueDays.Add(day);
         }
 
         weatherEventDays = uniqueDays.ToList();
+        weatherEventDays.Sort(); // Sort the days in ascending order
         Debug.Log("Weather Event Days: " + string.Join(", ", weatherEventDays));
+
+        foreach (int day in weatherEventDays)
+        {
+            string weatherEvent = weatherEvents[weatherEventIndex];
+            weatherEventIndex = (weatherEventIndex + 1) % weatherEvents.Count;
+            string weatherMessage = $"Weather event: {weatherEvent} is hitting today, Day no {day}";
+            AddNotification(day, weatherMessage);            
+
+            int notificationDay = Random.Range(day - 5, day);
+            string eventType = weatherEvents[weatherNotificationIndex];
+            weatherNotificationIndex = (weatherNotificationIndex + 1) % weatherEvents.Count;
+            string suffix = notfiMessagesSuffix[Random.Range(0, notfiMessagesSuffix.Count)];
+
+            string message = $"Weather notification: {eventType} {suffix}";
+            AddNotification(notificationDay, message);            
+        }
+    }
+    public void AddNotification(int day, string message)
+    {
+        if (!notificationDays.ContainsKey(day))
+        {
+            notificationDays[day] = new List<string>();
+        }
+        notificationDays[day].Add(message);
     }
     private void GenerateDrillMalfunctionDays()
     {
@@ -60,6 +119,7 @@ public class TankManager : MonoBehaviour
         }
 
         drillMalDays = uniqueDays.ToList();
+        drillMalDays.Sort(); // Sort the days in ascending order
         Debug.Log("Drill Malfunction Days: " + string.Join(", ", drillMalDays));
     }
 
@@ -71,6 +131,7 @@ public class TankManager : MonoBehaviour
 
     public void EndDay(int _currentDay)
     {
+        Debug.Log("Ending day: " + _currentDay);
         foreach (Lot lot in producingLots)
         {
             int barrels = lot.GetDailyProduction();
@@ -85,6 +146,15 @@ public class TankManager : MonoBehaviour
             TriggerWeatherEvent();
         }
 
+        if (notificationDays.ContainsKey(_currentDay))
+        {
+            foreach (string message in notificationDays[_currentDay])
+            {
+                Debug.Log($"Notification for day {_currentDay}: {message}");
+                notificationMessages.Add(message);
+            }
+        }
+
         if (drillMalDays.Contains(_currentDay))
         {
             TriggerDrillMalfunction();
@@ -92,13 +162,13 @@ public class TankManager : MonoBehaviour
     }
     private void TriggerWeatherEvent()
     {
-        int tanksToDestroy = Mathf.Min(UnityEngine.Random.Range(1, 5), tanks.Count);
+        int tanksToDestroy = Mathf.Min(Random.Range(1, 5), tanks.Count);
 
-        Debug.Log($"Weather event triggered! Destroying {tanksToDestroy} tanks.");
+        Debug.Log($"Destroying {tanksToDestroy} tanks.");
 
         for (int i = 0; i < tanksToDestroy; i++)
         {
-            int index = UnityEngine.Random.Range(0, tanks.Count);
+            int index = Random.Range(0, tanks.Count);
             Tank tank = tanks[index];
 
             // Free up spawn point
@@ -126,13 +196,19 @@ public class TankManager : MonoBehaviour
 
     private void TriggerDrillMalfunction()
     {
+        if (producingLots.Count == 0)
+        {
+            Debug.Log("No producing lots to trigger malfunction.");
+            return;
+        }
         Lot lot = producingLots[UnityEngine.Random.Range(0, producingLots.Count)];
         if (lot.IsDrilled && lot.IsProducing())
         {
             Transform drillChild = lot.transform.Find("Drill");
             drillChild.gameObject.SetActive(false);
             producingLots.Remove(lot);
-            Debug.Log($"Drill malfunction on {lot.name}! Stopping production.");
+            string message = $"Drill malfunction on {lot.name}! Stopping production.";
+            notificationMessages.Add(message);
         }
     }
 

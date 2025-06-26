@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -26,7 +27,19 @@ public class GameManager : MonoBehaviour
     private int gasolineCP;
     private int jetFuelCP;
     private int dieselCP;
-    private HashSet<int> selectedDays = new HashSet<int>();
+    public List<int> marketEventDays = new List<int>();
+    private List<string> marketEvents = new List<string>
+    {
+        "War in the Middle East",
+        "New Oil Discovery",
+        "OPEC Production Cut",
+        "Global Recession",
+        "Environmental Regulations Tightened"
+    };
+    private int marketNotificationIndex = 0;
+    private int marketEventIndex = 0;
+
+    // private HashSet<int> selectedDays = new HashSet<int>();
     #endregion
     private void Awake()
     {
@@ -39,6 +52,18 @@ public class GameManager : MonoBehaviour
         gameSceneUIRef.UpdateMoney(money);
         gameSceneUIRef.UpdateDay(currentTurn);
         gameSceneUIRef.UpdateBarrelsPanel();
+        UpdateFluctuations();
+        ShuffleMarketEvents();
+    }
+    private void ShuffleMarketEvents()
+    {
+        for (int i = marketEvents.Count - 1; i > 0; i--)
+        {
+            int j = UnityEngine.Random.Range(0, i + 1);
+            string temp = marketEvents[i];
+            marketEvents[i] = marketEvents[j];
+            marketEvents[j] = temp;
+        }
     }
 
     #region Getters & Setters
@@ -96,6 +121,7 @@ public class GameManager : MonoBehaviour
             Debug.Log("Game Over");
         }
     }
+    #region Market Fluctuations
     public void UpdateFluctuations()
     {
         System.Random rand = new System.Random(DateTime.Now.Millisecond);
@@ -114,13 +140,27 @@ public class GameManager : MonoBehaviour
         int maxEventDays = 5;
         int nMarketEvents = rand.Next(minEventDays, maxEventDays + 1);
 
-        selectedDays = new HashSet<int>();
+        HashSet<int> selectedDays = new HashSet<int>();
         while (selectedDays.Count < nMarketEvents)
         {
             selectedDays.Add(rand.Next(0, 30)); // Ensures unique days
         }
 
-        foreach (int day in selectedDays)
+        marketEventDays = selectedDays.ToList();
+        marketEventDays.Sort();
+
+        foreach (int day in marketEventDays)
+        {
+            int notificationDay = UnityEngine.Random.Range(day - 5, day);
+            string eventType = marketEvents[marketNotificationIndex];
+            marketNotificationIndex = (marketNotificationIndex + 1) % marketEvents.Count;
+            string suffix = TankManager.Instance.notfiMessagesSuffix[UnityEngine.Random.Range(0, TankManager.Instance.notfiMessagesSuffix.Count)];
+
+            string message = $"Market notification: {eventType} {suffix}";
+            TankManager.Instance.AddNotification(notificationDay, message);            
+        }
+
+        foreach (int day in marketEventDays)
         {
             crudeOilFluctuations[day] = rand.Next(-40, 41);
             gasolineFluctuations[day] = rand.Next(-40, 41);
@@ -169,17 +209,19 @@ public class GameManager : MonoBehaviour
 
         string maxChange = "+- 10%";
         string marketEventText = "";
-        foreach (int day in selectedDays)
+        foreach (int day in marketEventDays)
         {
             if (currentDay - 1 == day)
             {
                 maxChange = "+- 40%";
-                marketEventText = "Market Event!";
-
+                marketEventText = marketEvents[marketEventIndex];
+                TankManager.Instance.AddNotification(currentDay, marketEventText);
+                marketEventIndex = (marketEventIndex + 1) % marketEvents.Count;
             }
         }
-        
+
         gameSceneUIRef.UpdateMarketEventText(marketEventText);
         gameSceneUIRef.UpdateMaxChange(maxChange);
     }
+    #endregion
 }
