@@ -3,8 +3,17 @@ using UnityEngine.EventSystems;
 
 public class InputManager : MonoBehaviour
 {
+    public static InputManager Instance { get; private set; }
+
     [SerializeField] private Camera mainCamera;
-    [SerializeField] private LotUI lotUI;
+    public Lot selectedLot = null;
+
+    private void Awake()
+    {
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+    }
+
 
     void Update()
     {
@@ -33,15 +42,38 @@ public class InputManager : MonoBehaviour
                 Vector2 screenPos = mainCamera.WorldToScreenPoint(offsetPoint);
                 if (lot != null)
                 {
-                    if (GameManager.Instance.isInteractionGoing)
+                    if (GameManager.Instance != null)
                     {
-                        if (lot.IsTurnGoing)
+                        if (GameManager.Instance.isInteractionGoing)
                         {
-                            lotUI.Show(lot, screenPos);
+                            if (lot.IsTurnGoing)
+                            {
+                                OpsHandler.Instance.Show(lot);
+                                if (selectedLot != null && selectedLot != lot)
+                                {
+                                    selectedLot.SetSelected(false);
+                                }
+
+                                selectedLot = lot;
+                                selectedLot.SetSelected(true);
+
+                            }
+                        }
+
+                        else
+                        {
+                            OpsHandler.Instance.Show(lot);
+                            if (selectedLot != null && selectedLot != lot)
+                            {
+                                selectedLot.SetSelected(false);
+                            }
+
+                            selectedLot = lot;
+                            selectedLot.SetSelected(true);
+
                         }
                     }
-                    else
-                        lotUI.Show(lot, screenPos);
+
                 }
             }
         }

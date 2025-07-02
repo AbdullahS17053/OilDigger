@@ -5,8 +5,8 @@ public enum TankType
 {
     Crude_Oil,
     Gasoline,
-    Diesel_Fuel,
-    Jet_Fuel
+    Jet_Fuel,
+    Diesel_Fuel
 }
 
 public class Tank

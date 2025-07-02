@@ -11,20 +11,9 @@ public class GameSceneUI : MonoBehaviour
     [Header("Text Elements")]
     [SerializeField] private TMP_Text dayText;
     [SerializeField] private TMP_Text moneyText;
-    [SerializeField] private TMP_Text crudeOil;
-    [SerializeField] private TMP_Text jetFuel;
-    [SerializeField] private TMP_Text gasoline;
-    [SerializeField] private TMP_Text diesel;
+
     [SerializeField] private TMP_Text capacityText; // Text to show remaining tank capacity
     [SerializeField] private TMP_Text buyTankFeedbackMsg;
-    [SerializeField] private TMP_Text crudeOilChange;
-    [SerializeField] private TMP_Text gasolineChange;
-    [SerializeField] private TMP_Text jetFuelChange;
-    [SerializeField] private TMP_Text dieselChange;
-    [SerializeField] private TMP_Text crudeOilPrice;
-    [SerializeField] private TMP_Text gasolinePrice;
-    [SerializeField] private TMP_Text jetFuelPrice;
-    [SerializeField] private TMP_Text dieselPrice;
     [SerializeField] private TMP_Text maxChange;
     [SerializeField] private TMP_Text marketEventText;
 
@@ -66,6 +55,11 @@ public class GameSceneUI : MonoBehaviour
 
     void Awake()
     {
+        
+    }
+
+    void Start()
+    {
         curdeOilCP = curdeOilIP;
         gasolineCP = gasolineIP;
         jetFuelCP = jetFuelIP;
@@ -82,74 +76,15 @@ public class GameSceneUI : MonoBehaviour
     {
         dayText.text = $"Day: {day}";
     }
-    public void UpdateBarrelsPanel()
-    {
-        crudeOil.text = (TankManager.Instance.GetGlobalCrudeOilTotal() / 42).ToString();
-        gasoline.text = (TankManager.Instance.GetGlobalGasolineTotal() / 42).ToString();
-        diesel.text = (TankManager.Instance.GetGlobalDieselTotal() / 42).ToString();
-        jetFuel.text = (TankManager.Instance.GetGlobalJetFuelTotal() / 42).ToString();
-    }
 
-    public void UpdateBarrelCapacity(int _capacity)
-    {
-        capacityText.text = _capacity.ToString();
-    }
-
-    public void UpdateMarketChange(int _type, string text)
-    {
-        switch (_type)
-        {
-            case 0: // Crude Oil
-                crudeOilChange.text = text;
-                break;
-            case 1: // Gasoline
-                gasolineChange.text = text;
-                break;
-            case 2: // Jet Fuel
-                jetFuelChange.text = text;
-                break;
-            case 3: // Diesel
-                dieselChange.text = text;
-                break;
-            default:
-                Debug.LogError("Invalid fuel type for market change update.");
-                break;
-        }
-    }
-    public void UpdateMarketPrices(int _type, int price)
-    {
-        switch (_type)
-        {
-            case 0: // Crude Oil
-                curdeOilCP = price;
-                crudeOilPrice.text = $"{curdeOilCP}";
-                break;
-            case 1: // Gasoline
-                gasolineCP = price;
-                gasolinePrice.text = $"{gasolineCP}";
-                break;
-            case 2: // Jet Fuel
-                jetFuelCP = price;
-                jetFuelPrice.text = $"{jetFuelCP}";
-                break;
-            case 3: // Diesel
-                dieselCP = price;
-                dieselPrice.text = $"{dieselCP}";
-                break;
-            default:
-                Debug.LogError("Invalid fuel type for market price update.");
-                break;
-        }
-    }
-
-    public void UpdateMaxChange(string text)
-    {
-        maxChange.text = text;
-    }
-    public void UpdateMarketEventText(string text)
-    {
-        marketEventText.text = text;
-    }
+    // public void UpdateMaxChange(string text)
+    // {
+    //     maxChange.text = text;
+    // }
+    // public void UpdateMarketEventText(string text)
+    // {
+    //     marketEventText.text = text;
+    // }
 
 
     #endregion

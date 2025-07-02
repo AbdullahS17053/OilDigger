@@ -3,12 +3,13 @@ using UnityEngine;
 public class Lot : MonoBehaviour
 {
     #region Variables
-    private int oilChance;
+    public int oilChance;
     private int dailyProduction = 0;
     private bool isSurveyed = false;
     private bool isDrilled = false;
     private bool isSkipped = false;
     private bool isTurnGoing = false;
+    [SerializeField] private GameObject image;
     #endregion
     #region Properties
     public bool IsSurveyed => isSurveyed;
@@ -18,7 +19,14 @@ public class Lot : MonoBehaviour
     public int GetDailyProduction() => dailyProduction;
     public bool IsTurnGoing => isTurnGoing;
 
+
+
     public void Awake()
+    {
+
+    }
+
+    void Start()
     {
         oilChance = Random.Range(0, 101);
         float baseProduction = oilChance / 100f * 10f;
@@ -28,6 +36,7 @@ public class Lot : MonoBehaviour
 
     #endregion
     #region Methods
+
     public bool Survey()
     {
         if (isSurveyed || isDrilled || GameManager.Instance.HasInteractedThisTurn) return false;
@@ -36,7 +45,9 @@ public class Lot : MonoBehaviour
 
         isSurveyed = true;
         isTurnGoing = true;
-        GameManager.Instance.isInteractionGoing = true;
+        // GameManager.Instance.isInteractionGoing = false;
+        // GameManager.Instance.RegisterInteraction();
+
         // GetComponent<SpriteRenderer>().color = Color.green;
 
         Debug.Log($"{name} surveyed. Oil chance: {oilChance}%");
@@ -90,6 +101,12 @@ public class Lot : MonoBehaviour
         GameManager.Instance.RegisterInteraction();
         Debug.Log($"{name} skipped.");
         return true;
+    }
+
+    public void SetSelected(bool isSelected)
+    {
+        if (image != null)
+            image.SetActive(isSelected);
     }
 
     #endregion
