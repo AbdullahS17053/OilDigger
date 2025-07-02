@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -39,22 +41,46 @@ public class GameManager : MonoBehaviour
     private int marketNotificationIndex = 0;
     private int marketEventIndex = 0;
 
+    private readonly string[] monthAbbreviations = new string[]
+{
+    "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+    "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"
+};
+    private int currentMonthIndex;
+    private int netWorth = 0;
+    private int moneyBeforeTurn = 0;
     // private HashSet<int> selectedDays = new HashSet<int>();
     #endregion
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-        curdeOilCP = gameSceneUIRef.curdeOilIP;
-        gasolineCP = gameSceneUIRef.gasolineIP;
-        jetFuelCP = gameSceneUIRef.jetFuelIP;
-        dieselCP = gameSceneUIRef.dieselIP;
-        gameSceneUIRef.UpdateMoney(money);
-        gameSceneUIRef.UpdateDay(currentTurn);
-        gameSceneUIRef.UpdateBarrelsPanel();
-        UpdateFluctuations();
-        ShuffleMarketEvents();
+
     }
+
+    void Start()
+    {
+        curdeOilCP = MarketManager.Instance.curdeOilIP;
+        gasolineCP = MarketManager.Instance.gasolineIP;
+        jetFuelCP = MarketManager.Instance.jetFuelIP;
+        dieselCP = MarketManager.Instance.dieselIP;
+        TopUIHandler.Instance.SetMoney(money);
+        TopUIHandler.Instance.UpdateDay(currentTurn);
+        MarketManager.Instance.UpdateBarrelsPanel();
+
+        UpdateFluctuations();
+        TopUIHandler.Instance.SetMoney(money);
+        ShuffleMarketEvents();
+
+        currentMonthIndex = PlayerPrefs.GetInt("MonthIndex", 0); // Default to 0 = JAN
+        netWorth = PlayerPrefs.GetInt("NetWorth", 0);
+
+
+        TopUIHandler.Instance.UpdateMonth(monthAbbreviations[currentMonthIndex]);
+
+        moneyBeforeTurn = money;
+    }
+
     private void ShuffleMarketEvents()
     {
         for (int i = marketEvents.Count - 1; i > 0; i--)
@@ -95,7 +121,7 @@ public class GameManager : MonoBehaviour
 
     private void UpdateMoney()
     {
-        gameSceneUIRef.UpdateMoney(money);
+        TopUIHandler.Instance.SetMoney(money);
         if (money >= 10000) gameSceneUIRef.EnableBuyTank();
         else gameSceneUIRef.DisableBuyTank();
         if (money >= 30) gameSceneUIRef.EnableRefine();
@@ -106,20 +132,62 @@ public class GameManager : MonoBehaviour
 
     public void EndTurn()
     {
-        if (currentTurn <= maxTurns)
+        if (currentTurn < maxTurns)
         {
             tankManagerRef.EndDay(currentTurn);
-            UpdatePrices(currentTurn);
+            DaySummaryHandler.Instance.ShowPanel();
+            DaySummaryHandler.Instance.UpdateDay(currentTurn);
+            DaySummaryHandler.Instance.UpdateMoneySpent(moneyBeforeTurn - money);
+            string surveyMessage = "No Survey";
+            Lot selectedLot = InputManager.Instance.selectedLot;
+            if (selectedLot != null)
+            {
+                if (selectedLot.IsSurveyed)
+                {
+                    surveyMessage = $"{selectedLot.oilChance} % Chance";
+                }
+            }
 
-            currentTurn++;
-            gameSceneUIRef.UpdateDay(currentTurn);
-            gameSceneUIRef.UpdateBarrelsPanel();
-            hasInteractedThisTurn = false;
+            DaySummaryHandler.Instance.UpdateSurveyChance(surveyMessage);
+
+            moneyBeforeTurn = money;
+            StartCoroutine("LateUpdateEndDay");
+
         }
         else
         {
-            Debug.Log("Game Over");
+            currentMonthIndex = (currentMonthIndex + 1) % 12;
+            PlayerPrefs.SetInt("MonthIndex", currentMonthIndex);
+
+            GameOverManager.Instance.UpdateCash(money);
+            MarketManager.Instance.GameOver();
+            TankManager.Instance.GameOver();
+            StartCoroutine(LateUpdateGameOver());
         }
+    }
+    IEnumerator LateUpdateGameOver()
+    {
+        yield return new WaitForSeconds(2f);
+        GameOverManager.Instance.TogglePanel();
+        StartCoroutine(LateUpdateNetWorth());
+    }
+
+    IEnumerator LateUpdateNetWorth()
+    {
+        yield return new WaitForSeconds(1f);
+        GameOverManager.Instance.SetNetWorth();
+    }
+
+    IEnumerator LateUpdateEndDay()
+    {
+        yield return new WaitForSeconds(2f);
+        UpdatePrices(currentTurn);
+
+        currentTurn++;
+        TopUIHandler.Instance.UpdateDay(currentTurn);
+        MarketManager.Instance.UpdateBarrelsPanel();
+
+        hasInteractedThisTurn = false;
     }
     #region Market Fluctuations
     public void UpdateFluctuations()
@@ -157,7 +225,7 @@ public class GameManager : MonoBehaviour
             string suffix = TankManager.Instance.notfiMessagesSuffix[UnityEngine.Random.Range(0, TankManager.Instance.notfiMessagesSuffix.Count)];
 
             string message = $"Market notification: {eventType} {suffix}";
-            TankManager.Instance.AddNotification(notificationDay, message);            
+            TankManager.Instance.AddNotification(notificationDay, message);
         }
 
         foreach (int day in marketEventDays)
@@ -180,10 +248,10 @@ public class GameManager : MonoBehaviour
         string jetFuelChange = jetFuelC > 0 ? $"+{jetFuelC}" : $"{jetFuelC}";
         string dieselChange = dieselC > 0 ? $"+{dieselC}" : $"{dieselC}";
 
-        gameSceneUIRef.UpdateMarketChange(0, crudeOilChange);
-        gameSceneUIRef.UpdateMarketChange(1, gasolineChange);
-        gameSceneUIRef.UpdateMarketChange(2, jetFuelChange);
-        gameSceneUIRef.UpdateMarketChange(3, dieselChange);
+        // MarketManager.Instance.UpdateMarketChange(0, crudeOilChange);
+        MarketManager.Instance.UpdateMarketChange(1, gasolineChange);
+        MarketManager.Instance.UpdateMarketChange(2, jetFuelChange);
+        MarketManager.Instance.UpdateMarketChange(3, dieselChange);
 
         if (crudeOilC != 0)
             curdeOilCP += (int)((float)crudeOilC / 100f * curdeOilCP);
@@ -197,15 +265,15 @@ public class GameManager : MonoBehaviour
         if (dieselC != 0)
             dieselCP += (int)((float)dieselC / 100f * dieselCP);
 
-        curdeOilCP = Mathf.Max(curdeOilCP, gameSceneUIRef.curdeOilIP);
-        gasolineCP = Mathf.Max(gasolineCP, gameSceneUIRef.gasolineIP);
-        jetFuelCP = Mathf.Max(jetFuelCP, gameSceneUIRef.jetFuelIP);
-        dieselCP = Mathf.Max(dieselCP, gameSceneUIRef.dieselIP);
+        curdeOilCP = Mathf.Max(curdeOilCP, MarketManager.Instance.curdeOilIP);
+        gasolineCP = Mathf.Max(gasolineCP, MarketManager.Instance.gasolineIP);
+        jetFuelCP = Mathf.Max(jetFuelCP, MarketManager.Instance.jetFuelIP);
+        dieselCP = Mathf.Max(dieselCP, MarketManager.Instance.dieselIP);
 
-        gameSceneUIRef.UpdateMarketPrices(0, curdeOilCP);
-        gameSceneUIRef.UpdateMarketPrices(1, gasolineCP);
-        gameSceneUIRef.UpdateMarketPrices(2, jetFuelCP);
-        gameSceneUIRef.UpdateMarketPrices(3, dieselCP);
+        // MarketManager.Instance.UpdateMarketPrices(0, curdeOilCP);
+        MarketManager.Instance.UpdateMarketPrices(1, gasolineCP);
+        MarketManager.Instance.UpdateMarketPrices(2, jetFuelCP);
+        MarketManager.Instance.UpdateMarketPrices(3, dieselCP);
 
         string maxChange = "+- 10%";
         string marketEventText = "";
@@ -220,8 +288,8 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        gameSceneUIRef.UpdateMarketEventText(marketEventText);
-        gameSceneUIRef.UpdateMaxChange(maxChange);
+        // gameSceneUIRef.UpdateMarketEventText(marketEventText);
+        // gameSceneUIRef.UpdateMaxChange(maxChange);
     }
     #endregion
 }

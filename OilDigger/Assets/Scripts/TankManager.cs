@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -10,21 +11,23 @@ public class TankManager : MonoBehaviour
     [SerializeField] private GameObject tankPrefab;
     [SerializeField] private GameSceneUI gameSceneUIRef;
     [SerializeField] private int tankCapacity = 630; // gallons
+    [SerializeField] private int tankPrice = 1000;
+    [SerializeField] private int refineryPrice = 10000;
 
     private List<Lot> producingLots = new List<Lot>();
-    private Dictionary<TankType, int> globalFuelTotals = new Dictionary<TankType, int>
+    public Dictionary<TankType, int> globalFuelTotals = new Dictionary<TankType, int>
     {
         { TankType.Crude_Oil, 0 },
         { TankType.Gasoline, 0 },
-        { TankType.Diesel_Fuel, 0 },
-        { TankType.Jet_Fuel, 0 }
+        { TankType.Jet_Fuel, 0 },
+        { TankType.Diesel_Fuel, 0 }
     };
 
     private List<Tank> tanks = new List<Tank>();
     public List<Transform> tankTransforms = new List<Transform>();
     private List<int> weatherEventDays = new List<int>();
     private List<int> drillMalDays = new List<int>();
-  
+
     public Dictionary<int, List<string>> notificationDays = new();
     private List<string> weatherEvents = new List<string>
     {
@@ -46,13 +49,17 @@ public class TankManager : MonoBehaviour
         " soon",
         " in this week"
     };
-    public int RemainingCapacity { get; private set; }
+    private int TotalGallonsCapacity { get; set; }
+    private int RemainingGallonsCapacity { get; set; }
 
     void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+    }
 
+    void Start()
+    {
         GenerateWeatherEventDays();
         GenerateDrillMalfunctionDays();
         ShuffleWeatherEvents();
@@ -87,8 +94,8 @@ public class TankManager : MonoBehaviour
         {
             string weatherEvent = weatherEvents[weatherEventIndex];
             weatherEventIndex = (weatherEventIndex + 1) % weatherEvents.Count;
-            string weatherMessage = $"Weather event: {weatherEvent} is hitting today, Day no {day}";
-            AddNotification(day, weatherMessage);            
+            string weatherMessage = $"Weather event: {weatherEvent} is hitting today, Day no {day + 1}";
+            AddNotification(day, weatherMessage);
 
             int notificationDay = Random.Range(day - 5, day);
             string eventType = weatherEvents[weatherNotificationIndex];
@@ -96,7 +103,7 @@ public class TankManager : MonoBehaviour
             string suffix = notfiMessagesSuffix[Random.Range(0, notfiMessagesSuffix.Count)];
 
             string message = $"Weather notification: {eventType} {suffix}";
-            AddNotification(notificationDay, message);            
+            AddNotification(notificationDay, message);
         }
     }
     public void AddNotification(int day, string message)
@@ -110,11 +117,11 @@ public class TankManager : MonoBehaviour
     private void GenerateDrillMalfunctionDays()
     {
         HashSet<int> uniqueDays = new HashSet<int>();
-        int numMalfunctions = Random.Range(1, 6); // 1 to 5 malfunctions
+        int numMalfunctions = Random.Range(1, 4); // 1 to 5 malfunctions
 
         while (uniqueDays.Count < numMalfunctions)
         {
-            int day = Random.Range(0, 30);
+            int day = Random.Range(15, 30);
             uniqueDays.Add(day);
         }
 
@@ -131,70 +138,101 @@ public class TankManager : MonoBehaviour
 
     public void EndDay(int _currentDay)
     {
-        Debug.Log("Ending day: " + _currentDay);
+        // Debug.Log("Ending day: " + _currentDay);
+        int barrelsTotal = 0;
         foreach (Lot lot in producingLots)
         {
             int barrels = lot.GetDailyProduction();
             if (barrels > 0)
             {
+                barrelsTotal += barrels;
                 AddToTanks(barrels * 42, (int)TankType.Crude_Oil);
             }
         }
+        DaySummaryHandler.Instance.UpdateDailyProduction(barrelsTotal *42);
 
+        StartCoroutine(LateUpdateEndDay(_currentDay));
+    }
+    IEnumerator LateUpdateEndDay(int _currentDay)
+    {
+        yield return new WaitForSeconds(2f);
         if (weatherEventDays.Contains(_currentDay))
         {
-            TriggerWeatherEvent();
-        }
-
-        if (notificationDays.ContainsKey(_currentDay))
-        {
-            foreach (string message in notificationDays[_currentDay])
-            {
-                Debug.Log($"Notification for day {_currentDay}: {message}");
-                notificationMessages.Add(message);
-            }
+            TriggerWeatherEvent(_currentDay);
         }
 
         if (drillMalDays.Contains(_currentDay))
         {
-            TriggerDrillMalfunction();
+            TriggerDrillMalfunction(_currentDay);
+        }
+
+        if (notificationDays.ContainsKey(_currentDay))
+        {
+            NotificationUIManager.Instance.AddNotifications(_currentDay + 1, notificationDays[_currentDay]);
+
+            StartCoroutine("SwitchToNotification");
         }
     }
-    private void TriggerWeatherEvent()
+
+    private IEnumerator SwitchToNotification()
     {
-        int tanksToDestroy = Mathf.Min(Random.Range(1, 5), tanks.Count);
+        yield return new WaitForSeconds(2f);
+        TabManager.Instance.SwitchToTab(0);
 
-        Debug.Log($"Destroying {tanksToDestroy} tanks.");
-
-        for (int i = 0; i < tanksToDestroy; i++)
+    }
+    private void TriggerWeatherEvent(int currentDay)
+    {
+        if (tanks.Count == 0)
         {
-            int index = Random.Range(0, tanks.Count);
-            Tank tank = tanks[index];
+            Debug.Log("No tanks available to destroy.");
+            return;
+        }
 
+        int tanksToDestroy = Mathf.Min(Random.Range(1, 5), tanks.Count);
+        int tanksDestroyed = 0;
+        List<Tank> selectedTanks = new List<Tank>();
+
+        // Pick unique tanks to destroy
+        while (selectedTanks.Count < tanksToDestroy)
+        {
+            Tank tank = tanks[Random.Range(0, tanks.Count)];
+            if (!selectedTanks.Contains(tank))
+                selectedTanks.Add(tank);
+        }
+
+        foreach (Tank tank in selectedTanks)
+        {
             // Free up spawn point
             if (tank.AssignedSpawnPoint != null)
                 tankTransforms.Add(tank.AssignedSpawnPoint);
 
-            // Destroy GameObject
+            // Destroy visual
             if (tank.VisualInstance != null)
                 Destroy(tank.VisualInstance);
 
-            // Deduct oil stored in this tank from globalFuelTotals
+            // Adjust global totals
             foreach (var entry in tank.FuelStored)
             {
                 if (globalFuelTotals.ContainsKey(entry.Key))
                     globalFuelTotals[entry.Key] -= entry.Value;
             }
 
-            RemainingCapacity -= tankCapacity / 42;
-            tanks.RemoveAt(index);
+            TotalGallonsCapacity -= tankCapacity;
+            RemainingGallonsCapacity -= tank.RemainingCapacity;
+
+            tanks.Remove(tank);
+            tanksDestroyed++;
         }
 
-        gameSceneUIRef.UpdateBarrelsPanel();
-        gameSceneUIRef.UpdateBarrelCapacity(RemainingCapacity);
+        MarketManager.Instance.UpdateBarrelsPanel();
+        TopUIHandler.Instance.SetCapacity(TotalGallonsCapacity, RemainingGallonsCapacity);
+
+        string message = $"Weather event on Day {currentDay + 1}: Destroyed {tanksDestroyed} tank(s).";
+
+        AddNotification(currentDay, message);
     }
 
-    private void TriggerDrillMalfunction()
+    private void TriggerDrillMalfunction(int currentDay)
     {
         if (producingLots.Count == 0)
         {
@@ -208,7 +246,7 @@ public class TankManager : MonoBehaviour
             drillChild.gameObject.SetActive(false);
             producingLots.Remove(lot);
             string message = $"Drill malfunction on {lot.name}! Stopping production.";
-            notificationMessages.Add(message);
+            AddNotification(currentDay, message);
         }
     }
 
@@ -231,9 +269,12 @@ public class TankManager : MonoBehaviour
         };
 
         tanks.Add(newTank);
+        Debug.Log($"Added new tank at {spawnPoint.position}");
 
-        RemainingCapacity += tankCapacity / 42;
-        gameSceneUIRef.UpdateBarrelCapacity(RemainingCapacity);
+        TotalGallonsCapacity += tankCapacity;
+        RemainingGallonsCapacity += tankCapacity;
+
+        TopUIHandler.Instance.SetCapacity(TotalGallonsCapacity, RemainingGallonsCapacity);
     }
 
     private int ExtractFromTanks(TankType type, int gallonsRequired)
@@ -251,6 +292,7 @@ public class TankManager : MonoBehaviour
                 tank.FuelStored[type] -= extract;
                 tank.RemainingCapacity += extract;
                 remaining -= extract;
+                RemainingGallonsCapacity += extract;
             }
         }
 
@@ -259,6 +301,7 @@ public class TankManager : MonoBehaviour
 
     private int StoreInTanks(TankType type, int gallonsToStore)
     {
+        Debug.Log($"Storing {type} gallons {gallonsToStore}");
         int remaining = gallonsToStore;
 
         foreach (Tank tank in tanks)
@@ -267,8 +310,13 @@ public class TankManager : MonoBehaviour
             if (toStore > 0)
             {
                 tank.StoreFuel(type, toStore);
+                Debug.Log($"[StoreInTanks] Stored {toStore} gallons of {type} in tank.");
+
                 remaining -= toStore;
                 globalFuelTotals[type] += toStore;
+                RemainingGallonsCapacity -= toStore;
+
+                Debug.Log($"[StoreInTanks] Updated globalFuelTotals[{type}] = {globalFuelTotals[type]}");
             }
 
             if (remaining <= 0) break;
@@ -277,11 +325,13 @@ public class TankManager : MonoBehaviour
         return remaining;
     }
 
+
     private void UpdateTankUI()
     {
-        gameSceneUIRef.UpdateBarrelsPanel();
-        RemainingCapacity = RecalculateTotalBarrelCapacity();
-        gameSceneUIRef.UpdateBarrelCapacity(RemainingCapacity);
+        MarketManager.Instance.UpdateBarrelsPanel();
+        TotalGallonsCapacity = tanks.Count * tankCapacity;
+        RemainingGallonsCapacity = RecalculateTotalBarrelCapacity();
+        TopUIHandler.Instance.SetCapacity(TotalGallonsCapacity, RemainingGallonsCapacity);
     }
 
     public bool AddToTanks(int gallonsThisTurn, int _type, bool isBuy = false)
@@ -301,21 +351,26 @@ public class TankManager : MonoBehaviour
                 return false;
             }
 
-            gallonsRemaining = ExtractFromTanks(TankType.Crude_Oil, gallonsThisTurn);
-            globalFuelTotals[TankType.Crude_Oil] -= (gallonsThisTurn - gallonsRemaining);
+            int remainingAfterExtract = ExtractFromTanks(TankType.Crude_Oil, gallonsThisTurn);
+            int actuallyExtracted = gallonsThisTurn - remainingAfterExtract;
+
+            globalFuelTotals[TankType.Crude_Oil] -= actuallyExtracted;
+
+            gallonsRemaining = actuallyExtracted;
         }
 
         // Store in tanks
-        gallonsRemaining = StoreInTanks(type, gallonsRemaining);
+        int leftover = StoreInTanks(type, gallonsRemaining);
 
-        if (gallonsRemaining > 0)
+        if (leftover > 0)
         {
-            Debug.LogWarning($"Wasting {gallonsRemaining} gallons of {type} — no space left in tanks");
+            Debug.LogWarning($"Wasting {leftover} gallons of {type} — no space left in tanks");
         }
 
         UpdateTankUI();
         return true;
     }
+
 
     public int SellOil(int gallonsToSell, int type)
     {
@@ -347,7 +402,7 @@ public class TankManager : MonoBehaviour
         {
             totalGallons += tank.RemainingCapacity;
         }
-        return totalGallons / 42;
+        return totalGallons;
     }
 
     public int GetGlobalCrudeOilTotal()
@@ -368,5 +423,13 @@ public class TankManager : MonoBehaviour
     public int GetGlobalJetFuelTotal()
     {
         return globalFuelTotals[TankType.Jet_Fuel];
+    }
+
+    public void GameOver()
+    {
+        GameOverManager.Instance.UpdateTanks(tanks.Count, tankPrice);
+
+        GameOverManager.Instance.UpdateRefinery(producingLots.Count, refineryPrice);
+
     }
 }
