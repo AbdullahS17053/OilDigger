@@ -74,7 +74,7 @@ public class OpsHandler : MonoBehaviour
         //     surveyText.text = currentLot.oilChance.ToString() + " % Chance";
         // else
         //     surveyText.text = "$ 40,000";
-        skipButton.interactable = !currentLot.IsSkipped &&(currentLot.IsSurveyed && !currentLot.IsDrilled) || (!currentLot.IsSurveyed && !currentLot.IsDrilled);
+        skipButton.interactable = !currentLot.IsSkipped && (currentLot.IsSurveyed && !currentLot.IsDrilled) || (!currentLot.IsSurveyed && !currentLot.IsDrilled);
     }
 
     public void Survey()
@@ -87,7 +87,11 @@ public class OpsHandler : MonoBehaviour
             popup.GetComponent<SimpleFeedback>().Show("- $ 40,000", new Color32(255, 0, 0, 255));
         }
         else
+        {
             popup.GetComponent<SimpleFeedback>().Show("ERROR", new Color32(255, 0, 0, 255));
+            AudioManager.Instance.Play("Error");
+
+        }
 
         UpdateStatus();
 
@@ -107,7 +111,11 @@ public class OpsHandler : MonoBehaviour
             popup.GetComponent<SimpleFeedback>().Show("- $ 250,000", new Color32(255, 0, 0, 255));
         }
         else
+        {
             popup.GetComponent<SimpleFeedback>().Show("ERROR", new Color32(255, 0, 0, 255));
+            AudioManager.Instance.Play("Error");
+
+        }
         UpdateStatus();
 
     }
@@ -138,6 +146,8 @@ public class OpsHandler : MonoBehaviour
 
     public void OpenRefineOptions()
     {
+        AudioManager.Instance.Play("Button");
+
         refineOptionsPanel.SetActive(!refineOptionsPanel.activeSelf);
     }
     public void CloseRefineOptions()
@@ -147,6 +157,8 @@ public class OpsHandler : MonoBehaviour
 
     public void OpenRefineInputPanel(int _type)
     {
+        AudioManager.Instance.Play("Button");
+
         refineInputPanel.SetActive(true);
         CloseRefineOptions();
         refineInputType = _type;
@@ -176,6 +188,7 @@ public class OpsHandler : MonoBehaviour
 
     public void SliderValueChanged()
     {
+        AudioManager.Instance.Play("Slider");
         if (refineInputAmountSlider.value <= 0)
             refineInputAmountSlider.value = 0;
         // Always ensure slider value is whole number
@@ -224,6 +237,8 @@ public class OpsHandler : MonoBehaviour
         {
             Debug.Log("Not enough Crude Oil to refine.");
             popup.GetComponent<SimpleFeedback>().Show("ERROR", new Color32(255, 0, 0, 255));
+            AudioManager.Instance.Play("Error");
+
             CloseRefineInput();
             CloseRefineOptions();
             return;
@@ -233,6 +248,8 @@ public class OpsHandler : MonoBehaviour
         {
             Debug.Log("Not enough money to refine.");
             popup.GetComponent<SimpleFeedback>().Show("ERROR", new Color32(255, 0, 0, 255));
+            AudioManager.Instance.Play("Error");
+
             CloseRefineInput();
             CloseRefineOptions();
             return;
@@ -243,6 +260,24 @@ public class OpsHandler : MonoBehaviour
         CloseRefineInput();
         CloseRefineOptions();
 
+    }
+
+    public void DisableBuyTank()
+    {
+        buyTankButton.interactable = false;
+    }
+    public void EnableBuyTank()
+    {
+        buyTankButton.interactable = true;
+    }
+
+    public void DisableRefine()
+    {
+        refineButton.interactable = false;
+    }
+    public void EnableRefine()
+    {
+        refineButton.interactable = true;
     }
 
 }

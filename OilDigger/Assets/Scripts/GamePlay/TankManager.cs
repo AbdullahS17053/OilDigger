@@ -9,7 +9,6 @@ public class TankManager : MonoBehaviour
 
     [Header("Tank Settings")]
     [SerializeField] private GameObject tankPrefab;
-    [SerializeField] private GameSceneUI gameSceneUIRef;
     [SerializeField] private int tankCapacity = 630; // gallons
     [SerializeField] private int tankPrice = 1000;
     [SerializeField] private int refineryPrice = 10000;
@@ -149,7 +148,7 @@ public class TankManager : MonoBehaviour
                 AddToTanks(barrels * 42, (int)TankType.Crude_Oil);
             }
         }
-        DaySummaryHandler.Instance.UpdateDailyProduction(barrelsTotal *42);
+        DaySummaryHandler.Instance.UpdateDailyProduction(barrelsTotal * 42);
 
         StartCoroutine(LateUpdateEndDay(_currentDay));
     }
@@ -178,7 +177,7 @@ public class TankManager : MonoBehaviour
     {
         yield return new WaitForSeconds(2f);
         TabManager.Instance.SwitchToTab(0);
-
+        AudioManager.Instance.Play("Notification");
     }
     private void TriggerWeatherEvent(int currentDay)
     {
@@ -269,6 +268,8 @@ public class TankManager : MonoBehaviour
         };
 
         tanks.Add(newTank);
+        AudioManager.Instance.Play("Tank");
+
         Debug.Log($"Added new tank at {spawnPoint.position}");
 
         TotalGallonsCapacity += tankCapacity;

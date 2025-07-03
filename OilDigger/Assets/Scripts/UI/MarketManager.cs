@@ -74,6 +74,8 @@ public class MarketManager : MonoBehaviour
 
     public void OpenBuySellInputPanel(int option)
     {
+        AudioManager.Instance.Play("Button");
+
         type = option;
         buySellInputPanel.SetActive(true);
         CloseBuySellPanel();
@@ -113,6 +115,7 @@ public class MarketManager : MonoBehaviour
 
     public void SliderValueChanged()
     {
+        AudioManager.Instance.Play("Slider");
         int step = Mathf.FloorToInt(buySellInputAmountSlider.value);
         int gallons = step * 10;
 
@@ -133,6 +136,8 @@ public class MarketManager : MonoBehaviour
 
     public void SubmitBuySell()
     {
+        AudioManager.Instance.Play("Button");
+
         GameObject popup = Instantiate(feedbackPrefab, canvas.transform);
 
         popup.transform.position = buySellButton.transform.position;
@@ -142,6 +147,8 @@ public class MarketManager : MonoBehaviour
         {
             Debug.LogWarning("Gallons must be greater than zero.");
             popup.GetComponent<SimpleFeedback>().Show("ERROR", new Color32(255, 0, 0, 255));
+            AudioManager.Instance.Play("Error");
+
             return;
         }
 
@@ -157,12 +164,14 @@ public class MarketManager : MonoBehaviour
 
         if (buySell == 0) // BUY
         {
-            if (!GameManager.Instance.TrySpend(totalCost))
+            if (GameManager.Instance.GetMoney() < totalCost)
             {
                 Debug.LogWarning("Not enough money to buy.");
                 popup.GetComponent<SimpleFeedback>().Show("ERROR", new Color32(255, 0, 0, 255));
+                AudioManager.Instance.Play("Error");
                 return;
             }
+            GameManager.Instance.TrySpend(totalCost);
 
             bool added = TankManager.Instance.AddToTanks(gallons, type + 1, true);
 
@@ -171,7 +180,10 @@ public class MarketManager : MonoBehaviour
                 popup.GetComponent<SimpleFeedback>().Show($"- $ {totalCost}", new Color32(255, 0, 0, 255));
             }
             else
-                popup.GetComponent<SimpleFeedback>().Show($"- $ {totalCost}", new Color32(255, 0, 0, 255));
+            {
+                popup.GetComponent<SimpleFeedback>().Show($"ERROR!", new Color32(255, 0, 0, 255));
+                AudioManager.Instance.Play("Error");
+            }
 
         }
         else // SELL
@@ -188,6 +200,8 @@ public class MarketManager : MonoBehaviour
             {
                 Debug.LogWarning("Not enough fuel to sell.");
                 popup.GetComponent<SimpleFeedback>().Show("ERROR", new Color32(255, 0, 0, 255));
+                AudioManager.Instance.Play("Error");
+
                 return;
             }
         }
@@ -215,6 +229,8 @@ public class MarketManager : MonoBehaviour
 
     public void OpenBuySellPanel(int option)
     {
+        AudioManager.Instance.Play("Button");
+
         optionsPanel.SetActive(true);
         buySell = option;
         if (option == 0)
@@ -281,10 +297,10 @@ public class MarketManager : MonoBehaviour
 
     public void GameOver()
     {
-        int remaingCrude = TankManager.Instance.GetGlobalCrudeOilTotal() ;
-        int remaingGasoline = TankManager.Instance.GetGlobalGasolineTotal() ;
-        int remaingJetFuel = TankManager.Instance.GetGlobalJetFuelTotal() ;
-        int remaingDiesel = TankManager.Instance.GetGlobalDieselTotal() ;
+        int remaingCrude = TankManager.Instance.GetGlobalCrudeOilTotal();
+        int remaingGasoline = TankManager.Instance.GetGlobalGasolineTotal();
+        int remaingJetFuel = TankManager.Instance.GetGlobalJetFuelTotal();
+        int remaingDiesel = TankManager.Instance.GetGlobalDieselTotal();
 
         GameOverManager.Instance.UpdateCrudeOil(remaingCrude, curdeOilCP);
 
