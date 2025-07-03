@@ -16,12 +16,13 @@ public class DaySummaryHandler : MonoBehaviour
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
         panel.SetActive(false);
-
     }
 
     public void ShowPanel()
     {
         panel.SetActive(true);
+        AudioManager.Instance.Play("OpenMenu");
+
         StartCoroutine("ClosePanel");
     }
 

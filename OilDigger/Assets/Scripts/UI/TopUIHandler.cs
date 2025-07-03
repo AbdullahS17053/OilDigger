@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -8,7 +9,7 @@ public class TopUIHandler : MonoBehaviour
     public static TopUIHandler Instance { get; private set; }
 
     [SerializeField] private TMP_Text[] digitTexts; // Should be length 7, left to right
-    [SerializeField] private float digitRollSpeed = 0.05f; // Delay per digit step
+    [SerializeField] private float digitRollSpeed = 0.5f; // Delay per digit step
 
     [SerializeField] private Slider capacitySlider;
     [SerializeField] private TMP_Text capacityText;
@@ -23,8 +24,9 @@ public class TopUIHandler : MonoBehaviour
     public void SetMoney(int amount)
     {
         StartCoroutine(AnimateOdometer(amount));
-    }
+        AudioManager.Instance.Play("MoneyChanging");
 
+    }
     private IEnumerator AnimateOdometer(int amount)
     {
         string amountStr = amount.ToString();
@@ -34,33 +36,57 @@ public class TopUIHandler : MonoBehaviour
         // Step 1: Clear unused left digits
         for (int i = 0; i < startIndex; i++)
         {
-            digitTexts[i].text = ""; // Leading blanks
+            digitTexts[i].text = "";
         }
 
-        // Step 2: Animate each digit
+        int rollingDigits = 0;
+
+        // Step 2: Animate only changing digits
         for (int i = 0; i < digitCount; i++)
         {
             int textIndex = startIndex + i;
             int targetDigit = int.Parse(amountStr[i].ToString());
 
-            StartCoroutine(RollDigit(digitTexts[textIndex], targetDigit));
-            yield return new WaitForSeconds(digitRollSpeed); // Slight delay per digit
-        }
-    }
+            int currentDigit = 0;
+            if (int.TryParse(digitTexts[textIndex].text, out int parsed))
+                currentDigit = parsed;
 
-    private IEnumerator RollDigit(TMP_Text digitText, int targetDigit)
+            if (currentDigit != targetDigit)
+            {
+                rollingDigits++;
+                StartCoroutine(RollDigit(digitTexts[textIndex], targetDigit, () => rollingDigits--));
+                yield return new WaitForSeconds(digitRollSpeed); // Only delay if digit changes
+            }
+            else
+            {
+                digitTexts[textIndex].text = targetDigit.ToString();
+            }
+        }
+
+        if (rollingDigits > 0)
+        {
+            yield return new WaitUntil(() => rollingDigits == 0);
+        }
+
+        AudioManager.Instance.Stop("MoneyChanging");
+    }
+    private IEnumerator RollDigit(TMP_Text digitText, int targetDigit, Action onComplete)
     {
         int current = 0;
+        if (int.TryParse(digitText.text, out int parsed))
+            current = parsed;
 
         while (current != targetDigit)
         {
             digitText.text = current.ToString();
             current = (current + 1) % 10;
-            yield return new WaitForSeconds(0.02f); // Per step roll speed
+            yield return new WaitForSeconds(0.05f);
         }
 
         digitText.text = targetDigit.ToString();
+        onComplete?.Invoke();
     }
+
 
     public void SetCapacity(int totalCapacity, int remainingCapacity)
     {

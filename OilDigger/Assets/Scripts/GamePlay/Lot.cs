@@ -41,9 +41,15 @@ public class Lot : MonoBehaviour
     {
         if (isSurveyed || isDrilled || GameManager.Instance.HasInteractedThisTurn) return false;
 
-        if (!GameManager.Instance.TrySpend(40000)) return false;
+        if (!GameManager.Instance.TrySpend(40000))
+        {
+            AudioManager.Instance.Play("Error");
+            return false;
+        }
 
         isSurveyed = true;
+        AudioManager.Instance.Play("Survey");
+
         isTurnGoing = true;
         // GameManager.Instance.isInteractionGoing = false;
         // GameManager.Instance.RegisterInteraction();
@@ -58,7 +64,11 @@ public class Lot : MonoBehaviour
     {
         if (isDrilled || GameManager.Instance.HasInteractedThisTurn) return false;
 
-        if (!GameManager.Instance.TrySpend(250000)) return false;
+        if (!GameManager.Instance.TrySpend(250000))
+        {
+            AudioManager.Instance.Play("Error");
+            return false;
+        }
 
         isDrilled = true;
         isTurnGoing = false;
@@ -77,6 +87,7 @@ public class Lot : MonoBehaviour
         if (drillChild != null)
         {
             drillChild.gameObject.SetActive(true);
+            AudioManager.Instance.Play("Drill");
         }
 
         Debug.Log($"{name} drilled. Producing {dailyProduction} barrels/day.");
@@ -85,7 +96,11 @@ public class Lot : MonoBehaviour
 
     public bool Skip()
     {
-        if (GameManager.Instance.HasInteractedThisTurn) return false;
+        if (GameManager.Instance.HasInteractedThisTurn)
+        {
+            AudioManager.Instance.Play("Error");
+            return false;
+        }
 
         isSkipped = true;
         isTurnGoing = false;
@@ -96,6 +111,8 @@ public class Lot : MonoBehaviour
         if (skipChild != null)
         {
             skipChild.gameObject.SetActive(true);
+            AudioManager.Instance.Play("Skip");
+
         }
         // GetComponent<SpriteRenderer>().color = Color.red;
         GameManager.Instance.RegisterInteraction();

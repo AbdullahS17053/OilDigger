@@ -38,6 +38,7 @@ public class TabManager : MonoBehaviour
     }
     public void SwitchToTab(int tabIndex)
     {
+        AudioManager.Instance.Play("Button");
         surveyButton.interactable = false;
         drillButton.interactable = false;
         skipButton.interactable = false;

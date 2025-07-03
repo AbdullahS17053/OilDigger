@@ -13,7 +13,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int maxTurns = 30;
     [SerializeField] private int currentTurn = 1;
     [SerializeField] private int money = 1000000;
-    [SerializeField] private GameSceneUI gameSceneUIRef;
     [SerializeField] private TankManager tankManagerRef;
 
     #region Vars & Lists
@@ -49,12 +48,18 @@ public class GameManager : MonoBehaviour
     private int currentMonthIndex;
     private int netWorth = 0;
     private int moneyBeforeTurn = 0;
+
+    private int currentYear = 2025;
     // private HashSet<int> selectedDays = new HashSet<int>();
     #endregion
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+
+        AudioManager.Instance.Stop("MainMenuBG");
+        AudioManager.Instance.Stop("GameOverBG");
+        AudioManager.Instance.Play("GameBG");
 
     }
 
@@ -64,21 +69,26 @@ public class GameManager : MonoBehaviour
         gasolineCP = MarketManager.Instance.gasolineIP;
         jetFuelCP = MarketManager.Instance.jetFuelIP;
         dieselCP = MarketManager.Instance.dieselIP;
-        TopUIHandler.Instance.SetMoney(money);
+        // TopUIHandler.Instance.SetMoney(money);
         TopUIHandler.Instance.UpdateDay(currentTurn);
         MarketManager.Instance.UpdateBarrelsPanel();
 
         UpdateFluctuations();
-        TopUIHandler.Instance.SetMoney(money);
         ShuffleMarketEvents();
 
         currentMonthIndex = PlayerPrefs.GetInt("MonthIndex", 0); // Default to 0 = JAN
+        currentYear = PlayerPrefs.GetInt("Year", 2025);
         netWorth = PlayerPrefs.GetInt("NetWorth", 0);
 
 
         TopUIHandler.Instance.UpdateMonth(monthAbbreviations[currentMonthIndex]);
 
         moneyBeforeTurn = money;
+    }
+
+    public int GetMoney()
+    {
+        return money;
     }
 
     private void ShuffleMarketEvents()
@@ -106,6 +116,8 @@ public class GameManager : MonoBehaviour
     {
         if (money >= amount)
         {
+            AudioManager.Instance.Play("MoneyDeduct");
+
             money -= amount;
             UpdateMoney();
             return true;
@@ -116,16 +128,18 @@ public class GameManager : MonoBehaviour
     public void AddMoney(int amount)
     {
         money += amount;
+        AudioManager.Instance.Play("MoneyDeduct");
+
         UpdateMoney();
     }
 
     private void UpdateMoney()
     {
         TopUIHandler.Instance.SetMoney(money);
-        if (money >= 10000) gameSceneUIRef.EnableBuyTank();
-        else gameSceneUIRef.DisableBuyTank();
-        if (money >= 30) gameSceneUIRef.EnableRefine();
-        else gameSceneUIRef.DisableRefine();
+        if (money >= 10000) OpsHandler.Instance.EnableBuyTank();
+        else OpsHandler.Instance.DisableBuyTank();
+        if (money >= 30) OpsHandler.Instance.EnableRefine();
+        else OpsHandler.Instance.DisableRefine();
     }
 
     #endregion
@@ -158,6 +172,10 @@ public class GameManager : MonoBehaviour
         {
             currentMonthIndex = (currentMonthIndex + 1) % 12;
             PlayerPrefs.SetInt("MonthIndex", currentMonthIndex);
+            if (currentMonthIndex == 0)
+            {
+                PlayerPrefs.SetInt("Year", currentYear + 1);
+            }
 
             GameOverManager.Instance.UpdateCash(money);
             MarketManager.Instance.GameOver();
