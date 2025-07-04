@@ -1,0 +1,10 @@
+# ninja log v5
+34	1477	7733280757640574	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	1b63591e7ed7d8a7
+48	1487	7733280757753046	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	dabce13fc4ebc12b
+67	1508	7733280757958325	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	99fb81d6c42725fd
+25	1511	7733280757971120	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	5d67a1ccbcac7944
+1	1582	7733280758693717	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	921bb770f842e30d
+58	1608	7733280758989604	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	b9c941bcd80262ff
+41	1782	7733280760722500	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	d99a2afcbc5cca3b
+17	1868	7733280761560104	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	44d83483cc4d7b13
+1868	2044	7733280763331269	C:/fiverr game dev/OilDigger/OilDigger/OilDigger/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/2bl2z3v3/obj/arm64-v8a/libgame.so	e4deb4079ae5af13

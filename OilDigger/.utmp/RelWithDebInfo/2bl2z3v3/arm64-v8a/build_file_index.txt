@@ -1,0 +1,2 @@
+C:\fiverr game dev\OilDigger\OilDigger\OilDigger\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\CMakeLists.txt
+C:\fiverr game dev\OilDigger\OilDigger\OilDigger\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\GameActivity\CMakeLists.txt
