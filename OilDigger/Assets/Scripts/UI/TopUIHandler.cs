@@ -87,7 +87,6 @@ public class TopUIHandler : MonoBehaviour
         onComplete?.Invoke();
     }
 
-
     public void SetCapacity(int totalCapacity, int remainingCapacity)
     {
         int percentRemaining = 0;

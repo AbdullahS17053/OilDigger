@@ -49,7 +49,7 @@ public class TankManager : MonoBehaviour
         " in this week"
     };
     private int TotalGallonsCapacity { get; set; }
-    private int RemainingGallonsCapacity { get; set; }
+    public int RemainingGallonsCapacity { get; set; }
 
     void Awake()
     {
@@ -326,10 +326,9 @@ public class TankManager : MonoBehaviour
         return remaining;
     }
 
-
     private void UpdateTankUI()
     {
-        MarketManager.Instance.UpdateBarrelsPanel();
+        // MarketManager.Instance.UpdateBarrelsPanel();
         TotalGallonsCapacity = tanks.Count * tankCapacity;
         RemainingGallonsCapacity = RecalculateTotalBarrelCapacity();
         TopUIHandler.Instance.SetCapacity(TotalGallonsCapacity, RemainingGallonsCapacity);
@@ -376,6 +375,8 @@ public class TankManager : MonoBehaviour
     public int SellOil(int gallonsToSell, int type)
     {
         TankType tankType = (TankType)type;
+
+        Debug.Log($"{tankType}");
 
         if (gallonsToSell <= 0 || globalFuelTotals.GetValueOrDefault(tankType, 0) < gallonsToSell)
         {

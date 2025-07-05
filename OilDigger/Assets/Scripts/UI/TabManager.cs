@@ -38,6 +38,10 @@ public class TabManager : MonoBehaviour
     }
     public void SwitchToTab(int tabIndex)
     {
+        OpsHandler.Instance.CloseRefineInput();
+        OpsHandler.Instance.CloseRefineOptions();
+        MarketManager.Instance.CloseBuySellInputPanel();
+        MarketManager.Instance.CloseBuySellPanel();
         AudioManager.Instance.Play("Button");
         surveyButton.interactable = false;
         drillButton.interactable = false;

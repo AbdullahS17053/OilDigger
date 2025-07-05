@@ -62,13 +62,13 @@ public class SoundSettings : MonoBehaviour
     public void AddSFX()
     {
         volumeSliderSFX.value += 1;
-        ChangeVolumeSFX();
+        // ChangeVolumeSFX();
     }
 
     public void SubtractSFX()
     {
         volumeSliderSFX.value -= 1;
-        ChangeVolumeSFX();
+        // ChangeVolumeSFX();
     }
 
     public void SaveSFXVolume()
@@ -90,13 +90,13 @@ public class SoundSettings : MonoBehaviour
     public void AddMusic()
     {
         volumeSliderMusic.value += 1;
-        ChangeVolumeSFX();
+        // ChangeVolumeSFX();
     }
 
     public void SubtractMusic()
     {
         volumeSliderMusic.value -= 1;
-        ChangeVolumeSFX();
+        // ChangeVolumeSFX();
     }
 
     public void SaveMusicVolume()
