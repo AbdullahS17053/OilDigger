@@ -55,12 +55,13 @@ public class GameOverManager : MonoBehaviour
     void Start()
     {
         gameOverAnimator = gameOverPanel.GetComponent<Animator>();
+        // gameOverPanel.SetActive(false);
     }
 
     public void TogglePanel()
     {
+        // Debug.Log("Game over called");
         bool isOpen = gameOverAnimator.GetBool("Open");
-        gameOverAnimator.SetBool("Open", !isOpen);
 
         if (!isOpen)
         {
@@ -68,8 +69,11 @@ public class GameOverManager : MonoBehaviour
             AudioManager.Instance.Stop("MainMenuBG");
             AudioManager.Instance.Play("GameOverBG");
             AudioManager.Instance.Stop("Drill");
+            // gameOverPanel.SetActive(true);
         }
+        
 
+        gameOverAnimator.SetBool("Open", !isOpen);
     }
 
     public void Menu()

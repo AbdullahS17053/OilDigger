@@ -49,14 +49,11 @@ public class Lot : MonoBehaviour
 
         isSurveyed = true;
         AudioManager.Instance.Play("Survey");
-
+        GameManager.Instance.isTurnGoing = true;
         isTurnGoing = true;
-        // GameManager.Instance.isInteractionGoing = false;
-        // GameManager.Instance.RegisterInteraction();
+    
 
-        // GetComponent<SpriteRenderer>().color = Color.green;
-
-        Debug.Log($"{name} surveyed. Oil chance: {oilChance}%");
+        // Debug.Log($"{name} surveyed. Oil chance: {oilChance}%");
         return true;
     }
 
@@ -71,10 +68,9 @@ public class Lot : MonoBehaviour
         }
 
         isDrilled = true;
+        isSkipped = true;
         isTurnGoing = false;
-        GameManager.Instance.isInteractionGoing = false;
 
-        // GetComponent<SpriteRenderer>().color = Color.blue;
 
         GameManager.Instance.RegisterInteraction();
         if (IsProducing())
@@ -90,7 +86,7 @@ public class Lot : MonoBehaviour
             AudioManager.Instance.Play("Drill");
         }
 
-        Debug.Log($"{name} drilled. Producing {dailyProduction} barrels/day.");
+        // Debug.Log($"{name} drilled. Producing {dailyProduction} barrels/day.");
         return true;
     }
 
@@ -103,8 +99,8 @@ public class Lot : MonoBehaviour
         }
 
         isSkipped = true;
+        isDrilled = true;
         isTurnGoing = false;
-        GameManager.Instance.isInteractionGoing = false;
 
         // Enable the "Skip" child object
         Transform skipChild = transform.Find("Skip");
@@ -114,9 +110,8 @@ public class Lot : MonoBehaviour
             AudioManager.Instance.Play("Skip");
 
         }
-        // GetComponent<SpriteRenderer>().color = Color.red;
         GameManager.Instance.RegisterInteraction();
-        Debug.Log($"{name} skipped.");
+        // Debug.Log($"{name} skipped.");
         return true;
     }
 

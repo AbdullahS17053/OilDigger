@@ -84,15 +84,47 @@ public class MarketManager : MonoBehaviour
         {
             buySellInputSign.text = "-";
             buySellInputType.text = "Buy";
-            buySellInputAmountSlider.maxValue = maxGallonsToBuy;
+            buySellInputAmountSlider.maxValue = Mathf.Min(maxGallonsToBuy, TankManager.Instance.RemainingGallonsCapacity) / 10;
+
+            if (buySellInputAmountSlider.maxValue == 0)
+            {
+                buySellInputAmount.text = "No Capacity";
+            }
+            else
+                buySellInputAmount.text = "0 Gallons";
             buySellButtonText.text = "Buy";
         }
         else
         {
             buySellInputSign.text = "+";
             buySellInputType.text = "Sell";
-            buySellInputAmountSlider.maxValue = Mathf.Min(TankManager.Instance.globalFuelTotals[(TankType)type + 1], maxGallonsToBuy);
             buySellButtonText.text = "Sell";
+
+            int maxVal = 0;
+            string text = "";
+            if (type == 0)
+            {
+                text = gasoline.text;
+            }
+            else if (type == 1)
+                text = jetFuel.text;
+            else
+                text = diesel.text;
+
+            if (int.TryParse(text, out int value))
+            {
+                maxVal = value;
+            }
+
+            buySellInputAmountSlider.maxValue = Mathf.Min(maxVal, maxGallonsToBuy) / 10;
+
+            if (buySellInputAmountSlider.maxValue == 0)
+            {
+                buySellInputAmount.text = "No Fuel";
+            }
+            else
+                buySellInputAmount.text = "0 Gallons";
+
         }
 
         switch (type)
@@ -130,7 +162,7 @@ public class MarketManager : MonoBehaviour
 
         int totalCost = gallons * pricePerGallon;
 
-        buySellInputAmount.text = gallons.ToString();
+        buySellInputAmount.text = gallons.ToString() + " Gallons";
         buySellInputMoney.text = totalCost.ToString();
     }
 
@@ -209,18 +241,19 @@ public class MarketManager : MonoBehaviour
         // Update UI and close panel
         UpdateBarrelsPanel();
         CloseBuySellInputPanel();
+        buySellInputAmountSlider.value = 0;
     }
 
     public void AddSlider()
     {
         buySellInputAmountSlider.value += 1;
-        SliderValueChanged();
+        // SliderValueChanged();
     }
 
     public void SubtractSlider()
     {
         buySellInputAmountSlider.value -= 1;
-        SliderValueChanged();
+        // SliderValueChanged();
     }
     public void CloseBuySellInputPanel()
     {
@@ -230,7 +263,7 @@ public class MarketManager : MonoBehaviour
     public void OpenBuySellPanel(int option)
     {
         AudioManager.Instance.Play("Button");
-
+        CloseBuySellInputPanel();
         optionsPanel.SetActive(true);
         buySell = option;
         if (option == 0)

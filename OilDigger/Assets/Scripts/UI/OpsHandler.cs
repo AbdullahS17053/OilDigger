@@ -49,7 +49,8 @@ public class OpsHandler : MonoBehaviour
 
     public void Show(Lot _lot)
     {
-
+        CloseRefineInput();
+        CloseRefineOptions();
         if (GameManager.Instance.HasInteractedThisTurn) return;
 
         currentLot = _lot;
@@ -70,15 +71,17 @@ public class OpsHandler : MonoBehaviour
         surveyButton.interactable = !currentLot.IsSurveyed && !currentLot.IsDrilled && !currentLot.IsSkipped && GameManager.Instance.Money >= 40000;
         drillButton.interactable = !currentLot.IsDrilled && !currentLot.IsSkipped && GameManager.Instance.Money >= 250000;
 
-        // if (currentLot.IsSurveyed)
-        //     surveyText.text = currentLot.oilChance.ToString() + " % Chance";
-        // else
-        //     surveyText.text = "$ 40,000";
+        if (currentLot.IsSurveyed)
+            surveyText.text = currentLot.oilChance.ToString() + " % Chance";
+        else
+            surveyText.text = "$ 40,000";
         skipButton.interactable = !currentLot.IsSkipped && (currentLot.IsSurveyed && !currentLot.IsDrilled) || (!currentLot.IsSurveyed && !currentLot.IsDrilled);
     }
 
     public void Survey()
     {
+        CloseRefineInput();
+        CloseRefineOptions();
         GameObject popup = Instantiate(feedbackPrefab, canvas.transform);
 
         popup.transform.position = surveyButton.transform.position;
@@ -100,6 +103,8 @@ public class OpsHandler : MonoBehaviour
 
     public void Drill()
     {
+        CloseRefineInput();
+        CloseRefineOptions();
         GameObject popup = Instantiate(feedbackPrefab, canvas.transform);
 
         popup.transform.position = drillButton.transform.position;
@@ -117,11 +122,12 @@ public class OpsHandler : MonoBehaviour
 
         }
         UpdateStatus();
-
     }
 
     public void Skip()
     {
+        CloseRefineInput();
+        CloseRefineOptions();
         if (currentLot.Skip())
             GameManager.Instance.EndTurn();
         UpdateStatus();
@@ -131,6 +137,8 @@ public class OpsHandler : MonoBehaviour
 
     public void BuyTank()
     {
+        CloseRefineInput();
+        CloseRefineOptions();
         GameObject popup = Instantiate(feedbackPrefab, canvas.transform);
 
         popup.transform.position = buyTankButton.transform.position;
@@ -160,9 +168,11 @@ public class OpsHandler : MonoBehaviour
         AudioManager.Instance.Play("Button");
 
         refineInputPanel.SetActive(true);
+        refineInputAmountSlider.value = 0;
         CloseRefineOptions();
         refineInputType = _type;
         refineInputAmountSlider.maxValue = Mathf.Min(refineryCap, TankManager.Instance.GetGlobalCrudeOilTotal()) / 10;
+
         switch (_type)
         {
             case 0: // Oil
@@ -179,6 +189,13 @@ public class OpsHandler : MonoBehaviour
                 break;
         }
         SliderValueChanged();
+        if (refineInputAmountSlider.maxValue == 0)
+        {
+            refineInputAmount.text = "No Crude Oil";
+        }
+        else
+            refineInputAmount.text = "0 Gallons";
+
     }
 
     public void CloseRefineInput()
@@ -188,8 +205,10 @@ public class OpsHandler : MonoBehaviour
 
     public void SliderValueChanged()
     {
+
         AudioManager.Instance.Play("Slider");
-        if (refineInputAmountSlider.value <= 0)
+        // refineInputAmountSlider.value *= 10;
+        if (refineInputAmountSlider.value < 0)
             refineInputAmountSlider.value = 0;
         // Always ensure slider value is whole number
         int sliderStep = Mathf.FloorToInt(refineInputAmountSlider.value);
@@ -204,7 +223,7 @@ public class OpsHandler : MonoBehaviour
             refineInputAmountSlider.value = sliderStep;
         }
 
-        refineInputAmount.text = nGallonsToRefine.ToString();
+        refineInputAmount.text = nGallonsToRefine.ToString() + " Gallons";
 
         switch (refineInputType)
         {
@@ -219,13 +238,13 @@ public class OpsHandler : MonoBehaviour
     public void AddSlider()
     {
         refineInputAmountSlider.value += 1;
-        SliderValueChanged();
+        // SliderValueChanged();
     }
 
     public void SubtractSlider()
     {
         refineInputAmountSlider.value -= 1;
-        SliderValueChanged();
+        // SliderValueChanged();
     }
 
     public void SubmitRefine()

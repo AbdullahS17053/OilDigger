@@ -17,7 +17,6 @@ public class GameManager : MonoBehaviour
 
     #region Vars & Lists
     private bool hasInteractedThisTurn = false;
-    public bool isInteractionGoing = false;
 
     private int[] crudeOilFluctuations = new int[30];
     private int[] gasolineFluctuations = new int[30];
@@ -106,11 +105,11 @@ public class GameManager : MonoBehaviour
     public int CurrentTurn => currentTurn;
     public int Money => money;
     public bool HasInteractedThisTurn => hasInteractedThisTurn;
-
+    public bool isTurnGoing = false;
     public void RegisterInteraction()
     {
         hasInteractedThisTurn = true;
-        isInteractionGoing = false;
+        isTurnGoing = false;
     }
     public bool TrySpend(int amount)
     {
@@ -229,7 +228,7 @@ public class GameManager : MonoBehaviour
         HashSet<int> selectedDays = new HashSet<int>();
         while (selectedDays.Count < nMarketEvents)
         {
-            selectedDays.Add(rand.Next(0, 30)); // Ensures unique days
+            selectedDays.Add(rand.Next(8, 30)); // Ensures unique days
         }
 
         marketEventDays = selectedDays.ToList();
