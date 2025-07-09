@@ -205,6 +205,7 @@ public class GameManager : MonoBehaviour
         MarketManager.Instance.UpdateBarrelsPanel();
 
         hasInteractedThisTurn = false;
+        OpsHandler.Instance.surveyedThisTurn = false;
     }
     #region Market Fluctuations
     public void UpdateFluctuations()
