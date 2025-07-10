@@ -7,10 +7,15 @@ using UnityEngine.UI;
 public class MainMenu : MonoBehaviour
 {
     [SerializeField] GameObject mainMenuPanel;
-    [SerializeField] GameObject settinsPanel;
+    [SerializeField] GameObject settingsPanel;
     [SerializeField] GameObject loadingScreen;
+    [SerializeField] GameObject narrativePanel;
     [SerializeField] Slider loadingSlider;
     [SerializeField] TMP_Text loadingProgress;
+    [SerializeField] TMP_Text narrativeText;
+    [SerializeField] GameObject letsGoButton;
+    private string fullText;
+    [SerializeField] float typingSpeed = 0.05f;
     private Animator mainMenuAnimator;
     private Animator settingsAnimator;
 
@@ -26,8 +31,44 @@ public class MainMenu : MonoBehaviour
     void Start()
     {
         mainMenuAnimator = mainMenuPanel.GetComponent<Animator>();
-        settingsAnimator = settinsPanel.GetComponent<Animator>();
+        settingsAnimator = settingsPanel.GetComponent<Animator>();
 
+        string isFirstTime = PlayerPrefs.GetString("IsFirstTime", "true");
+        if (isFirstTime == "true" )
+        {
+            narrativePanel.SetActive(true);
+            letsGoButton.SetActive(false);
+            fullText = narrativeText.text;
+            StartCoroutine(TypeText());
+
+        }
+        else if (isFirstTime == "false")
+        {
+            narrativePanel.SetActive(false);
+        }
+    }
+
+    private IEnumerator TypeText()
+    {
+        AudioManager.Instance.Play("Keyboard");
+        // AudioManager.Instance.Stop("MainMenuBG");
+        narrativeText.text = "";
+        foreach (char c in fullText)
+        {
+            narrativeText.text += c;
+            yield return new WaitForSeconds(typingSpeed);
+        }
+        letsGoButton.SetActive(true);
+        AudioManager.Instance.Stop("Keyboard");
+
+    }
+
+    public void CloseNarrative()
+    {
+        AudioManager.Instance.Play("Button");
+        narrativePanel.SetActive(false);
+        PlayerPrefs.SetString("IsFirstTime", "false");
+        // AudioManager.Instance.Play("MainMenuBG");
     }
 
     public void ToggleMainMenu()

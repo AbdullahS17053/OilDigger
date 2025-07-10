@@ -7,14 +7,12 @@ public class Lot : MonoBehaviour
     private int dailyProduction = 0;
     private bool isSurveyed = false;
     private bool isDrilled = false;
-    private bool isSkipped = false;
     private bool isTurnGoing = false;
     [SerializeField] private GameObject image;
     #endregion
     #region Properties
     public bool IsSurveyed => isSurveyed;
     public bool IsDrilled => isDrilled;
-    public bool IsSkipped => isSkipped;
     public bool IsProducing() => isDrilled && dailyProduction > 0;
     public int GetDailyProduction() => dailyProduction;
     public bool IsTurnGoing => isTurnGoing;
@@ -51,7 +49,10 @@ public class Lot : MonoBehaviour
         AudioManager.Instance.Play("Survey");
         GameManager.Instance.isTurnGoing = true;
         isTurnGoing = true;
-    
+
+        TankManager.Instance.AddNotification(GameManager.Instance.CurrentTurn, $"Survey Result : {oilChance} % chance of oil.");
+  
+        // GameManager.Instance.RegisterInteraction();
 
         // Debug.Log($"{name} surveyed. Oil chance: {oilChance}%");
         return true;
@@ -68,9 +69,7 @@ public class Lot : MonoBehaviour
         }
 
         isDrilled = true;
-        isSkipped = true;
         isTurnGoing = false;
-
 
         GameManager.Instance.RegisterInteraction();
         if (IsProducing())
@@ -90,30 +89,6 @@ public class Lot : MonoBehaviour
         return true;
     }
 
-    public bool Skip()
-    {
-        if (GameManager.Instance.HasInteractedThisTurn)
-        {
-            AudioManager.Instance.Play("Error");
-            return false;
-        }
-
-        isSkipped = true;
-        isDrilled = true;
-        isTurnGoing = false;
-
-        // Enable the "Skip" child object
-        Transform skipChild = transform.Find("Skip");
-        if (skipChild != null)
-        {
-            skipChild.gameObject.SetActive(true);
-            AudioManager.Instance.Play("Skip");
-
-        }
-        GameManager.Instance.RegisterInteraction();
-        // Debug.Log($"{name} skipped.");
-        return true;
-    }
 
     public void SetSelected(bool isSelected)
     {

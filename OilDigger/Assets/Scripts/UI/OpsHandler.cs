@@ -36,6 +36,8 @@ public class OpsHandler : MonoBehaviour
     private int refineInputType = 0; // 0: Gasoline, 1: Jet Fuel, 2: Diesel
     private int moneyToSpend = 0;
     private int nGallonsToRefine = 0;
+
+    public bool surveyedThisTurn = false;
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -68,18 +70,18 @@ public class OpsHandler : MonoBehaviour
 
     public void UpdateStatus()
     {
-        surveyButton.interactable = !currentLot.IsSurveyed && !currentLot.IsDrilled && !currentLot.IsSkipped && GameManager.Instance.Money >= 40000;
-        drillButton.interactable = !currentLot.IsDrilled && !currentLot.IsSkipped && GameManager.Instance.Money >= 250000;
+        surveyButton.interactable = !currentLot.IsSurveyed && !currentLot.IsDrilled && GameManager.Instance.Money >= 40000;
+        drillButton.interactable = !currentLot.IsDrilled && GameManager.Instance.Money >= 250000;
 
-        if (currentLot.IsSurveyed)
-            surveyText.text = currentLot.oilChance.ToString() + " % Chance";
-        else
-            surveyText.text = "$ 40,000";
-        skipButton.interactable = !currentLot.IsSkipped && (currentLot.IsSurveyed && !currentLot.IsDrilled) || (!currentLot.IsSurveyed && !currentLot.IsDrilled);
+        // if (currentLot.IsSurveyed)
+        //     surveyText.text = currentLot.oilChance.ToString() + " % Chance";
+        // else
+        //     surveyText.text = "$ 40,000";
     }
 
     public void Survey()
     {
+        surveyedThisTurn = true;
         CloseRefineInput();
         CloseRefineOptions();
         GameObject popup = Instantiate(feedbackPrefab, canvas.transform);
@@ -87,6 +89,7 @@ public class OpsHandler : MonoBehaviour
         popup.transform.position = surveyButton.transform.position;
         if (currentLot.Survey())
         {
+            // GameManager.Instance.EndTurn();
             popup.GetComponent<SimpleFeedback>().Show("- $ 40,000", new Color32(255, 0, 0, 255));
         }
         else
@@ -128,8 +131,12 @@ public class OpsHandler : MonoBehaviour
     {
         CloseRefineInput();
         CloseRefineOptions();
-        if (currentLot.Skip())
-            GameManager.Instance.EndTurn();
+
+        GameManager.Instance.EndTurn();
+        GameManager.Instance.RegisterInteraction();
+        if (!surveyedThisTurn)
+            DaySummaryHandler.Instance.UpdateSurveyChance("No Survey");
+        // DaySummaryHandler.Instance.UpdateWastedOil(0);
         UpdateStatus();
 
         // Hide();

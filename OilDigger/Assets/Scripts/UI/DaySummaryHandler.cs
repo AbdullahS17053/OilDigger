@@ -11,6 +11,7 @@ public class DaySummaryHandler : MonoBehaviour
     [SerializeField] private TMP_Text moneySpent;
     [SerializeField] private TMP_Text suveyChance;
     [SerializeField] private TMP_Text drillResult;
+    [SerializeField] private TMP_Text wastedOil;
     private void Awake()
     {
         if (Instance == null) Instance = this;
@@ -28,7 +29,7 @@ public class DaySummaryHandler : MonoBehaviour
 
     IEnumerator ClosePanel()
     {
-        yield return new WaitForSeconds(3f);
+        yield return new WaitForSeconds(2.5f);
         panel.SetActive(false);
     }
 
@@ -50,5 +51,9 @@ public class DaySummaryHandler : MonoBehaviour
     public void UpdateDailyProduction(int gallons)
     {
         drillResult.text = $"{gallons} Gallons";
+    }
+    public void UpdateWastedOil(int gallons)
+    {
+        wastedOil.text = $"{gallons} Gallons";
     }
 }

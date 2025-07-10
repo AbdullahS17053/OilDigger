@@ -45,7 +45,6 @@ public class TabManager : MonoBehaviour
         AudioManager.Instance.Play("Button");
         surveyButton.interactable = false;
         drillButton.interactable = false;
-        skipButton.interactable = false;
         surveyText.text = "$ 40,000";
         SetStartAxisVertical();
         if (!tabAnimator.GetBool("Open"))
@@ -89,13 +88,13 @@ public class TabManager : MonoBehaviour
             closeTabButtonImage.enabled = false;
         }
     }
-    
+
     public void SetStartAxisHorizontal()
     {
         GridLayoutGroup grid = contentObject.GetComponent<GridLayoutGroup>();
         if (grid != null)
         {
-            grid.startAxis = GridLayoutGroup.Axis.Horizontal;
+            grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
         }
     }
 
@@ -104,7 +103,7 @@ public class TabManager : MonoBehaviour
         GridLayoutGroup grid = contentObject.GetComponent<GridLayoutGroup>();
         if (grid != null)
         {
-            grid.startAxis = GridLayoutGroup.Axis.Vertical;
+            grid.startCorner = GridLayoutGroup.Corner.LowerRight;
         }
     }
 }
