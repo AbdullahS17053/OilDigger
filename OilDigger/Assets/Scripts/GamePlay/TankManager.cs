@@ -145,9 +145,10 @@ public class TankManager : MonoBehaviour
             if (barrels > 0)
             {
                 barrelsTotal += barrels;
-                AddToTanks(barrels * 42, (int)TankType.Crude_Oil);
             }
         }
+        AddToTanks(barrelsTotal * 42, (int)TankType.Crude_Oil);
+
         DaySummaryHandler.Instance.UpdateDailyProduction(barrelsTotal * 42);
 
         StartCoroutine(LateUpdateEndDay(_currentDay));
@@ -338,9 +339,15 @@ public class TankManager : MonoBehaviour
     {
         TankType type = (TankType)_type;
 
-        if (tanks.Count == 0) return false;
+        if (tanks.Count == 0)
+        {
+            DaySummaryHandler.Instance.UpdateWastedOil(gallonsThisTurn);
+            Debug.Log("wasting oil: " + gallonsThisTurn);
+            return false;
+        }
 
         int gallonsRemaining = gallonsThisTurn;
+
 
         // Handle Crude Oil conversion for refined fuels
         if (type != TankType.Crude_Oil && !isBuy)
@@ -361,11 +368,7 @@ public class TankManager : MonoBehaviour
 
         // Store in tanks
         int leftover = StoreInTanks(type, gallonsRemaining);
-
-        if (leftover > 0)
-        {
-            Debug.LogWarning($"Wasting {leftover} gallons of {type} — no space left in tanks");
-        }
+        DaySummaryHandler.Instance.UpdateWastedOil(leftover);
 
         UpdateTankUI();
         return true;

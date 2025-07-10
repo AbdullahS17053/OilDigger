@@ -136,6 +136,7 @@ public class OpsHandler : MonoBehaviour
         GameManager.Instance.RegisterInteraction();
         if (!surveyedThisTurn)
             DaySummaryHandler.Instance.UpdateSurveyChance("No Survey");
+        // DaySummaryHandler.Instance.UpdateWastedOil(0);
         UpdateStatus();
 
         // Hide();
