@@ -34,7 +34,7 @@ public class MainMenu : MonoBehaviour
         settingsAnimator = settingsPanel.GetComponent<Animator>();
 
         string isFirstTime = PlayerPrefs.GetString("IsFirstTime", "true");
-        if (isFirstTime == "true")
+        if (isFirstTime == "true" )
         {
             narrativePanel.SetActive(true);
             letsGoButton.SetActive(false);
