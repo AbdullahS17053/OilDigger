@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class CameraPan : MonoBehaviour
 {
@@ -39,6 +40,10 @@ public class CameraPan : MonoBehaviour
 
     void HandleMouseInput()
     {
+        // Check if pointer is over UI
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return;
+
         // Panning
         if (Input.GetMouseButtonDown(1))
         {
@@ -67,6 +72,11 @@ public class CameraPan : MonoBehaviour
 
     void HandleTouchInput()
     {
+        Debug.Log("Handling touch input");
+        // Check if touch is over UI (for mobile)
+        if (Input.touchCount > 0 && EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            return;
+
         if (Input.touchCount == 1)
         {
             // Single touch - panning
