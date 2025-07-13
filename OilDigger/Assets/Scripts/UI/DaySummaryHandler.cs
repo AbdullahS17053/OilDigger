@@ -23,13 +23,10 @@ public class DaySummaryHandler : MonoBehaviour
     {
         panel.SetActive(true);
         AudioManager.Instance.Play("OpenMenu");
-
-        StartCoroutine("ClosePanel");
     }
 
-    IEnumerator ClosePanel()
-    {
-        yield return new WaitForSeconds(2.5f);
+    public void ClosePanel()
+    {  
         panel.SetActive(false);
     }
 
@@ -44,7 +41,7 @@ public class DaySummaryHandler : MonoBehaviour
     }
 
     public void UpdateSurveyChance(string message)
-    {
+    { 
         suveyChance.text = message;
     }
 

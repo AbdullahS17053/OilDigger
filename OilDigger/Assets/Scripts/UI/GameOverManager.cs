@@ -33,7 +33,7 @@ public class GameOverManager : MonoBehaviour
     [SerializeField] private TMP_Text refineryPrice;
     [SerializeField] private TMP_Text refineryTotal;
 
-    [SerializeField] private TMP_Text[] digitTexts; // Should be length 7, left to right
+    [SerializeField] private TMP_Text[] digitTexts; 
     [SerializeField] private float digitRollSpeed = 0.05f;
     [SerializeField] private GameObject gameOverPanel;
 
