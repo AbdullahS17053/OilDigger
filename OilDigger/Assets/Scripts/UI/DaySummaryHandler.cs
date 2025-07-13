@@ -41,7 +41,7 @@ public class DaySummaryHandler : MonoBehaviour
     }
 
     public void UpdateSurveyChance(string message)
-    {
+    { 
         suveyChance.text = message;
     }
 
