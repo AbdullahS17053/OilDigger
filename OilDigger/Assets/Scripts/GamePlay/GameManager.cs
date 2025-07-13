@@ -151,6 +151,7 @@ public class GameManager : MonoBehaviour
             DaySummaryHandler.Instance.ShowPanel();
             DaySummaryHandler.Instance.UpdateDay(currentTurn);
             DaySummaryHandler.Instance.UpdateMoneySpent(moneyBeforeTurn - money);
+            TankManager.Instance.AddNotification(currentTurn, $"Money Spent: {moneyBeforeTurn - money}");
             string surveyMessage = "No Survey";
             Lot selectedLot = InputManager.Instance.selectedLot;
             if (selectedLot != null)

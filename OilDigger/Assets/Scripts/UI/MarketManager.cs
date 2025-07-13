@@ -1,4 +1,7 @@
+using System;
+using System.Collections;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -36,6 +39,8 @@ public class MarketManager : MonoBehaviour
     [SerializeField] private GameObject feedbackPrefab;
     [SerializeField] private Canvas canvas;
 
+    [SerializeField] private TMP_Text[] digitTexts;
+    [SerializeField] private float digitRollSpeed = 0.05f;
 
 
     [Header("Initial Prices")]
@@ -72,6 +77,82 @@ public class MarketManager : MonoBehaviour
         UpdateMarketPrices(3, dieselIP);
     }
 
+    public void UpdateNetWorth()
+    {
+        int cq = int.TryParse(crude.text, out int crudee) ? crudee : 0;
+        int gq = int.TryParse(gasoline.text, out int gasolinee) ? gasolinee : 0;
+        int jq = int.TryParse(jetFuel.text, out int jetFuele) ? jetFuele : 0;
+        int dq = int.TryParse(diesel.text, out int diesele) ? diesele : 0;
+
+        int totalWorth = (cq * curdeOilCP) + (gq * gasolineCP) + (jq * jetFuelCP) + (dq * dieselCP) + GameManager.Instance.GetMoney();
+
+        SetNetWorth(totalWorth);
+    }
+
+    public void SetNetWorth(int amount)
+    {
+        AudioManager.Instance.Play("MoneyChanging");
+        StartCoroutine(AnimateOdometer(amount));
+    }
+    private IEnumerator AnimateOdometer(int amount)
+    {
+        string amountStr = amount.ToString();
+        int digitCount = amountStr.Length;
+        int startIndex = digitTexts.Length - digitCount;
+
+        // Step 1: Clear unused left digits
+        for (int i = 0; i < startIndex; i++)
+        {
+            digitTexts[i].text = "";
+        }
+
+        int rollingDigits = 0;
+
+        // Step 2: Animate only changing digits
+        for (int i = 0; i < digitCount; i++)
+        {
+            int textIndex = startIndex + i;
+            int targetDigit = int.Parse(amountStr[i].ToString());
+
+            int currentDigit = 0;
+            if (int.TryParse(digitTexts[textIndex].text, out int parsed))
+                currentDigit = parsed;
+
+            if (currentDigit != targetDigit)
+            {
+                rollingDigits++;
+                StartCoroutine(RollDigit(digitTexts[textIndex], targetDigit, () => rollingDigits--));
+                yield return new WaitForSeconds(digitRollSpeed); // Only delay if digit changes
+            }
+            else
+            {
+                digitTexts[textIndex].text = targetDigit.ToString();
+            }
+        }
+
+        if (rollingDigits > 0)
+        {
+            yield return new WaitUntil(() => rollingDigits == 0);
+        }
+
+        AudioManager.Instance.Stop("MoneyChanging");
+    }
+    private IEnumerator RollDigit(TMP_Text digitText, int targetDigit, Action onComplete)
+    {
+        int current = 0;
+        if (int.TryParse(digitText.text, out int parsed))
+            current = parsed;
+
+        while (current != targetDigit)
+        {
+            digitText.text = current.ToString();
+            current = (current + 1) % 10;
+            yield return new WaitForSeconds(0.05f);
+        }
+
+        digitText.text = targetDigit.ToString();
+        onComplete?.Invoke();
+    }
     public void OpenBuySellInputPanel(int option)
     {
         AudioManager.Instance.Play("Button");
@@ -241,6 +322,7 @@ public class MarketManager : MonoBehaviour
         // Update UI and close panel
         UpdateBarrelsPanel();
         CloseBuySellInputPanel();
+        UpdateNetWorth();
         buySellInputAmountSlider.value = 0;
     }
 

@@ -150,6 +150,8 @@ public class TankManager : MonoBehaviour
         AddToTanks(barrelsTotal * 42, (int)TankType.Crude_Oil);
 
         DaySummaryHandler.Instance.UpdateDailyProduction(barrelsTotal * 42);
+        // if (barrelsTotal > 0)
+        AddNotification(_currentDay, $"Daily production: {barrelsTotal * 42} gallons of Crude Oil Drilled.");
 
         StartCoroutine(LateUpdateEndDay(_currentDay));
     }
@@ -342,6 +344,8 @@ public class TankManager : MonoBehaviour
         if (tanks.Count == 0)
         {
             DaySummaryHandler.Instance.UpdateWastedOil(gallonsThisTurn);
+            if (gallonsThisTurn > 0)
+                AddNotification(GameManager.Instance.CurrentTurn, $"Wasting oil: {gallonsThisTurn} gallons due to no tanks available.");
             Debug.Log("wasting oil: " + gallonsThisTurn);
             return false;
         }
@@ -369,7 +373,10 @@ public class TankManager : MonoBehaviour
         // Store in tanks
         int leftover = StoreInTanks(type, gallonsRemaining);
         DaySummaryHandler.Instance.UpdateWastedOil(leftover);
-
+        if (leftover > 0)
+            AddNotification(GameManager.Instance.CurrentTurn, $"Wasting oil: {leftover} gallons due to no tanks available.");
+        else
+            AddNotification(GameManager.Instance.CurrentTurn, $"No oil wasted.");
         UpdateTankUI();
         return true;
     }

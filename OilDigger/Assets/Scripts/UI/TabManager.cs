@@ -46,6 +46,7 @@ public class TabManager : MonoBehaviour
         surveyButton.interactable = false;
         drillButton.interactable = false;
         surveyText.text = "$ 40,000";
+
         SetStartAxisVertical();
         if (!tabAnimator.GetBool("Open"))
         {
@@ -62,6 +63,10 @@ public class TabManager : MonoBehaviour
             tabButton.image.sprite = inactiveTabSprite;
         }
         tabButtons[tabIndex].image.sprite = activeTabSprite;
+        if (tabIndex == 1)
+        {
+            MarketManager.Instance.UpdateNetWorth();
+        }
     }
 
     public void TogglePanel()
