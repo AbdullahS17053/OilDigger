@@ -113,7 +113,7 @@ public class OpsHandler : MonoBehaviour
         popup.transform.position = drillButton.transform.position;
         if (currentLot.Drill())
         {
-            GameManager.Instance.EndTurn();
+            //GameManager.Instance.EndTurn();
 
             // Set custom text
             popup.GetComponent<SimpleFeedback>().Show("- $ 250,000", new Color32(255, 0, 0, 255));
