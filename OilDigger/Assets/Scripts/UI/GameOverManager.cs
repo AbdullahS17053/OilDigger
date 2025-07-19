@@ -81,7 +81,7 @@ public class GameOverManager : MonoBehaviour
         AudioManager.Instance.Play("Button");
 
         TogglePanel();
-        StartCoroutine(LoadAsynchronously(0));
+        StartCoroutine(LoadAsynchronously(1));
     }
 
     public void Replay()

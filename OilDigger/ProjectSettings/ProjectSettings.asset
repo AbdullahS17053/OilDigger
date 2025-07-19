@@ -916,11 +916,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: d8b3f754-7130-4f80-9b8f-93a9d66becdb
+  cloudProjectId: 7c120449-dfae-4f4b-a8f4-896c01085da8
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
   projectName: OilDigger
-  organizationId: abdullah17053
+  organizationId: hmyn5238
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
