@@ -1,0 +1,39 @@
+{
+    "name": "Sample_LeaderboardsDeployment",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Services.Authentication",
+        "Unity.Services.Core",
+        "Unity.Services.Leaderboards",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "LEADERBOARDS_PRESENT",
+        "AUTHENTICATION_PRESENT"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.services.leaderboards",
+            "expression": "2.0.0",
+            "define": "LEADERBOARDS_PRESENT"
+        },
+        {
+            "name": "com.unity.services.authentication",
+            "expression": "3.1.0",
+            "define": "AUTHENTICATION_PRESENT"
+        },
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "1.0.0",
+            "define": "INPUT_SYSTEM_PRESENT"
+        }
+    ],
+    "noEngineReferences": false
+}

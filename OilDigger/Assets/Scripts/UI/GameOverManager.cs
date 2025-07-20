@@ -33,7 +33,7 @@ public class GameOverManager : MonoBehaviour
     [SerializeField] private TMP_Text refineryPrice;
     [SerializeField] private TMP_Text refineryTotal;
 
-    [SerializeField] private TMP_Text[] digitTexts; 
+    [SerializeField] private TMP_Text[] digitTexts;
     [SerializeField] private float digitRollSpeed = 0.05f;
     [SerializeField] private GameObject gameOverPanel;
 
@@ -43,6 +43,7 @@ public class GameOverManager : MonoBehaviour
 
     private Animator gameOverAnimator;
     private int netMoneyThisGame = 0;
+    private bool scoreSubmitted = false;
 
     private void Awake()
     {
@@ -71,7 +72,7 @@ public class GameOverManager : MonoBehaviour
             AudioManager.Instance.Stop("Drill");
             // gameOverPanel.SetActive(true);
         }
-        
+
 
         gameOverAnimator.SetBool("Open", !isOpen);
     }
@@ -114,7 +115,28 @@ public class GameOverManager : MonoBehaviour
     {
         AudioManager.Instance.Play("MoneyChanging");
         StartCoroutine(AnimateOdometer(netMoneyThisGame));
+
+        SubmitScoreToLeaderboard();
     }
+
+    async void SubmitScoreToLeaderboard()
+    {
+        if (!scoreSubmitted && LeaderboardManager.Instance != null)
+        {
+            scoreSubmitted = true;
+            bool success = await LeaderboardManager.Instance.SubmitScore(netMoneyThisGame);
+
+            if (success)
+            {
+                Debug.Log($"Score submitted to leaderboard: ${netMoneyThisGame:N0}");
+            }
+            else
+            {
+                Debug.LogWarning("Failed to submit score to leaderboard");
+            }
+        }
+    }
+
     private IEnumerator AnimateOdometer(int amount)
     {
         string amountStr = amount.ToString();

@@ -14,6 +14,8 @@ public class MainMenu : MonoBehaviour
     [SerializeField] TMP_Text loadingProgress;
     [SerializeField] TMP_Text narrativeText;
     [SerializeField] GameObject letsGoButton;
+    [SerializeField] private LeaderboardUI leaderboardUI;
+    
     private string fullText;
     [SerializeField] float typingSpeed = 0.05f;
     private Animator mainMenuAnimator;
@@ -45,6 +47,20 @@ public class MainMenu : MonoBehaviour
         else if (isFirstTime == "false")
         {
             narrativePanel.SetActive(false);
+        }
+        
+        if (LeaderboardManager.Instance == null)
+        {
+            var leaderboardManagerPrefab = Resources.Load<GameObject>("LeaderboardManager");
+            if (leaderboardManagerPrefab != null)
+            {
+                Instantiate(leaderboardManagerPrefab);
+            }
+            else
+            {
+                var go = new GameObject("LeaderboardManager");
+                go.AddComponent<LeaderboardManager>();
+            }
         }
     }
 
@@ -79,6 +95,19 @@ public class MainMenu : MonoBehaviour
 
         bool isOpen2 = settingsAnimator.GetBool("Open");
         settingsAnimator.SetBool("Open", !isOpen2);
+    }
+
+    public void ShowLeaderboard()
+    {
+        AudioManager.Instance.Play("Button");
+        if (leaderboardUI != null)
+        {
+            leaderboardUI.ShowLeaderboard();
+        }
+        else
+        {
+            Debug.LogWarning("LeaderboardUI reference not set in MainMenu");
+        }
     }
 
     // public void ToggleSettings()

@@ -1,0 +1,5 @@
+{
+	"displayName":"Leaderboards Deployment",
+	"description": "This is a simple sample to deploy and call a Leaderboard configuration.",
+	"createSeparatePackage": false
+}
