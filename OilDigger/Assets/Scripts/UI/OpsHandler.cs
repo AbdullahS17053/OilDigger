@@ -353,8 +353,8 @@ public class OpsHandler : MonoBehaviour
     public void SubmitRefine()
     {
         GameObject popup = Instantiate(feedbackPrefab, canvas.transform);
-
         popup.transform.position = refineAction.transform.position;
+        
         if (TankManager.Instance.GetGlobalCrudeOilTotal() < nGallonsToRefine)
         {
             Debug.Log("Not enough Crude Oil to refine.");
@@ -376,12 +376,36 @@ public class OpsHandler : MonoBehaviour
             CloseRefineOptions();
             return;
         }
-        bool success = TankManager.Instance.AddToTanks(nGallonsToRefine, (int)refineInputType + 1);
-        popup.GetComponent<SimpleFeedback>().Show("REFINED", new Color32(30, 110, 30, 255));
-
+        
+        bool success;
+        int refinedType = (int)refineInputType + 1;
+        
+        // Calculate the output amount based on the refinery speed upgrade
+        int outputAmount = nGallonsToRefine;
+        if (UpgradeManager.Instance != null && UpgradeManager.Instance.HasUpgrade(UpgradeType.RefinerySpeedUpgrade))
+        {
+            // Double the output amount with the upgrade
+            outputAmount *= UpgradeManager.Instance.GetRefineryCapacityMultiplier();
+            
+            // Show enhanced feedback for the upgrade
+            string fuelType = refineInputType == 0 ? "Gasoline" : (refineInputType == 1 ? "Jet Fuel" : "Diesel");
+            popup.GetComponent<SimpleFeedback>().Show($"REFINED x2", new Color32(30, 180, 30, 255));
+            
+            // Add a second popup to show the doubled output
+            GameObject bonusPopup = Instantiate(feedbackPrefab, canvas.transform);
+            bonusPopup.transform.position = refineAction.transform.position + Vector3.down * 40;
+            bonusPopup.GetComponent<SimpleFeedback>().Show($"+{outputAmount - nGallonsToRefine} {fuelType}", new Color32(0, 255, 0, 255));
+        }
+        else
+        {
+            popup.GetComponent<SimpleFeedback>().Show("REFINED", new Color32(30, 110, 30, 255));
+        }
+        
+        // Use AddToTanks with the calculated output amount but consume only the original input amount
+        success = TankManager.Instance.AddToTanks(outputAmount, refinedType, false, nGallonsToRefine);
+        
         CloseRefineInput();
         CloseRefineOptions();
-
     }
 
     public void DisableBuyTank()

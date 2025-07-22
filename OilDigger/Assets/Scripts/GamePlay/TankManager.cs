@@ -345,7 +345,7 @@ public class TankManager : MonoBehaviour
         TopUIHandler.Instance.SetCapacity(TotalGallonsCapacity, RemainingGallonsCapacity);
     }
 
-    public bool AddToTanks(int gallonsThisTurn, int _type, bool isBuy = false)
+    public bool AddToTanks(int gallonsThisTurn, int _type, bool isBuy = false, int crudeOilToConsume = -1)
     {
         TankType type = (TankType)_type;
 
@@ -360,22 +360,34 @@ public class TankManager : MonoBehaviour
 
         int gallonsRemaining = gallonsThisTurn;
 
-
         // Handle Crude Oil conversion for refined fuels
         if (type != TankType.Crude_Oil && !isBuy)
         {
-            if (globalFuelTotals[TankType.Crude_Oil] < gallonsThisTurn)
+            // If crudeOilToConsume is -1 (default), use gallonsThisTurn
+            int amountToConsume = crudeOilToConsume >= 0 ? crudeOilToConsume : gallonsThisTurn;
+            
+            if (globalFuelTotals[TankType.Crude_Oil] < amountToConsume)
             {
-                Debug.LogWarning($"Not enough Crude Oil to convert {gallonsThisTurn} gallons into {type}");
+                Debug.LogWarning($"Not enough Crude Oil to convert {amountToConsume} gallons into {type}");
                 return false;
             }
 
-            int remainingAfterExtract = ExtractFromTanks(TankType.Crude_Oil, gallonsThisTurn);
-            int actuallyExtracted = gallonsThisTurn - remainingAfterExtract;
+            int remainingAfterExtract = ExtractFromTanks(TankType.Crude_Oil, amountToConsume);
+            int actuallyExtracted = amountToConsume - remainingAfterExtract;
 
             globalFuelTotals[TankType.Crude_Oil] -= actuallyExtracted;
 
-            gallonsRemaining = actuallyExtracted;
+            // The output can be different from input with refinery upgrades
+            if (amountToConsume != gallonsThisTurn && actuallyExtracted < amountToConsume)
+            {
+                // Scale the output proportionally if we couldn't extract all the crude
+                float ratio = (float)actuallyExtracted / amountToConsume;
+                gallonsRemaining = Mathf.FloorToInt(gallonsThisTurn * ratio);
+            }
+            else
+            {
+                gallonsRemaining = gallonsThisTurn;
+            }
         }
 
         // Store in tanks
