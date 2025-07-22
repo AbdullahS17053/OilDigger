@@ -201,6 +201,13 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSeconds(2f);
         UpdatePrices(currentTurn);
 
+        // Check for automated refinery
+        if (UpgradeManager.Instance != null && UpgradeManager.Instance.ShouldAutoRefine())
+        {
+            // Auto-refine crude oil at end of turn
+            AutoRefine();
+        }
+
         currentTurn++;
         TopUIHandler.Instance.UpdateDay(currentTurn);
         MarketManager.Instance.UpdateBarrelsPanel();
@@ -309,6 +316,31 @@ public class GameManager : MonoBehaviour
 
         // gameSceneUIRef.UpdateMarketEventText(marketEventText);
         // gameSceneUIRef.UpdateMaxChange(maxChange);
+    }
+
+    private void AutoRefine()
+    {
+        int crudeOil = TankManager.Instance.GetGlobalCrudeOilTotal();
+        
+        if (crudeOil <= 0)
+            return;
+            
+        // Distribute crude oil evenly among the three refined products
+        int thirdCrude = crudeOil / 3;
+        
+        // Try to refine gasoline
+        if (thirdCrude > 0)
+            TankManager.Instance.AddToTanks(thirdCrude, (int)TankType.Gasoline);
+            
+        // Try to refine jet fuel  
+        if (thirdCrude > 0)
+            TankManager.Instance.AddToTanks(thirdCrude, (int)TankType.Jet_Fuel);
+            
+        // Try to refine diesel
+        if (thirdCrude > 0)
+            TankManager.Instance.AddToTanks(thirdCrude, (int)TankType.Diesel_Fuel);
+            
+        TankManager.Instance.AddNotification(currentTurn, "Auto-refinery processed crude oil.");
     }
     #endregion
 }

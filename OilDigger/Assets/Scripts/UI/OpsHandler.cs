@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 
 public class OpsHandler : MonoBehaviour
@@ -84,46 +85,135 @@ public class OpsHandler : MonoBehaviour
         surveyedThisTurn = true;
         CloseRefineInput();
         CloseRefineOptions();
+    
+        // Survey the current lot
         GameObject popup = Instantiate(feedbackPrefab, canvas.transform);
-
         popup.transform.position = surveyButton.transform.position;
+    
         if (currentLot.Survey())
         {
-            // GameManager.Instance.EndTurn();
             popup.GetComponent<SimpleFeedback>().Show("- $ 40,000", new Color32(255, 0, 0, 255));
+            
+            // Check if we have the Advanced Survey Drones upgrade
+            int surveyCount = 1;
+            if (UpgradeManager.Instance != null && UpgradeManager.Instance.HasUpgrade(UpgradeType.AdvancedSurveyDrones))
+            {
+                surveyCount = UpgradeManager.Instance.GetAdvancedSurveyCount();
+                
+                // Find all lots in the scene
+                Lot[] allLots = FindObjectsOfType<Lot>();
+                
+                // Simple approach: just find the closest lots that are valid for surveying
+                List<Lot> surveyCandidates = new List<Lot>();
+                
+                foreach (Lot lot in allLots)
+                {
+                    // Skip the current lot and any lots that are already surveyed or drilled
+                    if (lot == currentLot || lot.IsSurveyed || lot.IsDrilled)
+                        continue;
+                    
+                    surveyCandidates.Add(lot);
+                }
+                
+                // Sort by distance (closest first)
+                surveyCandidates.Sort((a, b) => 
+                    Vector3.Distance(a.transform.position, currentLot.transform.position)
+                    .CompareTo(Vector3.Distance(b.transform.position, currentLot.transform.position)));
+                
+                // Survey the nearest valid lots (up to surveyCount - 1)
+                int additionalSurveys = 0;
+                for (int i = 0; i < Mathf.Min(surveyCandidates.Count, surveyCount - 1); i++)
+                {
+                    // Pass true to indicate this is part of a multi-survey operation
+                    if (surveyCandidates[i].Survey(true))
+                    {
+                        additionalSurveys++;
+                    }
+                }
+                
+                // Show feedback about additional surveys
+                if (additionalSurveys > 0)
+                {
+                    GameObject extraPopup = Instantiate(feedbackPrefab, canvas.transform);
+                    extraPopup.transform.position = surveyButton.transform.position + Vector3.down * 50;
+                    extraPopup.GetComponent<SimpleFeedback>().Show($"+{additionalSurveys} FREE", new Color32(0, 255, 0, 255));
+                }
+            }
         }
         else
         {
             popup.GetComponent<SimpleFeedback>().Show("ERROR", new Color32(255, 0, 0, 255));
             AudioManager.Instance.Play("Error");
-
         }
-
+    
         UpdateStatus();
-
-        // Hide();
     }
 
     public void Drill()
     {
         CloseRefineInput();
         CloseRefineOptions();
+        
+        // Drill the current lot
         GameObject popup = Instantiate(feedbackPrefab, canvas.transform);
-
         popup.transform.position = drillButton.transform.position;
+        
         if (currentLot.Drill())
         {
-            //GameManager.Instance.EndTurn();
-
-            // Set custom text
             popup.GetComponent<SimpleFeedback>().Show("- $ 250,000", new Color32(255, 0, 0, 255));
+            
+            // Check if we have the Multi-Rig Drilling upgrade
+            int drillCount = 1;
+            if (UpgradeManager.Instance != null && UpgradeManager.Instance.HasUpgrade(UpgradeType.MultiRigDrilling))
+            {
+                drillCount = UpgradeManager.Instance.GetMultiRigDrillingCount();
+                
+                // Find all lots in the scene
+                Lot[] allLots = FindObjectsOfType<Lot>();
+                
+                // Simple approach: just find the closest lots that are valid for drilling
+                List<Lot> drillingCandidates = new List<Lot>();
+                
+                foreach (Lot lot in allLots)
+                {
+                    // Skip the current lot and any lots that aren't surveyed or already drilled
+                    if (lot == currentLot || !lot.IsSurveyed || lot.IsDrilled)
+                        continue;
+                    
+                    drillingCandidates.Add(lot);
+                }
+                
+                // Sort by distance (closest first)
+                drillingCandidates.Sort((a, b) => 
+                    Vector3.Distance(a.transform.position, currentLot.transform.position)
+                    .CompareTo(Vector3.Distance(b.transform.position, currentLot.transform.position)));
+                
+                // Drill the nearest valid lots (up to drillCount - 1)
+                int additionalDrills = 0;
+                for (int i = 0; i < Mathf.Min(drillingCandidates.Count, drillCount - 1); i++)
+                {
+                    // Pass true to indicate this is part of a multi-drill operation
+                    if (GameManager.Instance.TrySpend(250000) && drillingCandidates[i].Drill(true))
+                    {
+                        additionalDrills++;
+                    }
+                }
+                
+                // Show feedback about additional drills
+                if (additionalDrills > 0)
+                {
+                    GameObject extraPopup = Instantiate(feedbackPrefab, canvas.transform);
+                    extraPopup.transform.position = drillButton.transform.position + Vector3.down * 50;
+                    extraPopup.GetComponent<SimpleFeedback>().Show($"+{additionalDrills} EXTRA", new Color32(0, 255, 0, 255));
+                }
+            }
         }
         else
         {
             popup.GetComponent<SimpleFeedback>().Show("ERROR", new Color32(255, 0, 0, 255));
             AudioManager.Instance.Play("Error");
-
         }
+        
         UpdateStatus();
     }
 
@@ -178,21 +268,27 @@ public class OpsHandler : MonoBehaviour
         refineInputAmountSlider.value = 0;
         CloseRefineOptions();
         refineInputType = _type;
-        refineInputAmountSlider.maxValue = Mathf.Min(refineryCap, TankManager.Instance.GetGlobalCrudeOilTotal()) / 10;
+        
+        // Apply refinery capacity multiplier if upgrade is active
+        int capacityMultiplier = 1;
+        if (UpgradeManager.Instance != null && UpgradeManager.Instance.HasUpgrade(UpgradeType.RefinerySpeedUpgrade))
+        {
+            capacityMultiplier = UpgradeManager.Instance.GetRefineryCapacityMultiplier();
+        }
+        
+        int modifiedRefineryCap = refineryCap * capacityMultiplier;
+        refineInputAmountSlider.maxValue = Mathf.Min(modifiedRefineryCap, TankManager.Instance.GetGlobalCrudeOilTotal()) / 10;
 
         switch (_type)
         {
             case 0: // Oil
                 refineInputTitle.text = "Gasoline";
-
                 break;
             case 1: // Gas
                 refineInputTitle.text = "Jet Fuel";
-
                 break;
             case 2: // Water
                 refineInputTitle.text = "Diesel";
-
                 break;
         }
         SliderValueChanged();

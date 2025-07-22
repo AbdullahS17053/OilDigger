@@ -35,9 +35,10 @@ public class Lot : MonoBehaviour
     #endregion
     #region Methods
 
-    public bool Survey()
+    public bool Survey(bool isMultiSurvey = false)
     {
-        if (isSurveyed || isDrilled || GameManager.Instance.HasInteractedThisTurn) return false;
+        // Skip the turn check for additional surveys in multi-survey operations
+        if (isSurveyed || isDrilled || (!isMultiSurvey && GameManager.Instance.HasInteractedThisTurn)) return false;
 
         if (!GameManager.Instance.TrySpend(40000))
         {
@@ -47,20 +48,25 @@ public class Lot : MonoBehaviour
 
         isSurveyed = true;
         AudioManager.Instance.Play("Survey");
-        GameManager.Instance.isTurnGoing = true;
-        isTurnGoing = true;
+        
+        // Only set these for the primary survey, not for additional ones
+        if (!isMultiSurvey)
+        {
+            GameManager.Instance.isTurnGoing = true;
+            isTurnGoing = true;
+        }
 
         TankManager.Instance.AddNotification(GameManager.Instance.CurrentTurn, $"Survey Result : {oilChance} % chance of oil.");
   
         // GameManager.Instance.RegisterInteraction();
 
-        // Debug.Log($"{name} surveyed. Oil chance: {oilChance}%");
         return true;
     }
 
-    public bool Drill()
+    public bool Drill(bool isMultiDrill = false)
     {
-        if (isDrilled || GameManager.Instance.HasInteractedThisTurn) return false;
+        // Skip the turn check for additional drills in multi-drill operations
+        if (isDrilled || (!isMultiDrill && GameManager.Instance.HasInteractedThisTurn)) return false;
 
         if (!GameManager.Instance.TrySpend(250000))
         {
@@ -71,7 +77,12 @@ public class Lot : MonoBehaviour
         isDrilled = true;
         isTurnGoing = false;
 
-        GameManager.Instance.RegisterInteraction();
+        // Only register the interaction for the primary drill, not for additional ones
+        if (!isMultiDrill)
+        {
+            GameManager.Instance.RegisterInteraction();
+        }
+        
         if (IsProducing())
         {
             TankManager.Instance.RegisterProducingLot(this);
@@ -85,10 +96,8 @@ public class Lot : MonoBehaviour
             AudioManager.Instance.Play("Drill");
         }
 
-        // Debug.Log($"{name} drilled. Producing {dailyProduction} barrels/day.");
         return true;
     }
-
 
     public void SetSelected(bool isSelected)
     {

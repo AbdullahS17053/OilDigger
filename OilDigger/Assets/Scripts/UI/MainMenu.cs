@@ -15,6 +15,7 @@ public class MainMenu : MonoBehaviour
     [SerializeField] TMP_Text narrativeText;
     [SerializeField] GameObject letsGoButton;
     [SerializeField] private LeaderboardUI leaderboardUI;
+    [SerializeField] private UpgradesUI upgradesUI;
     
     private string fullText;
     [SerializeField] float typingSpeed = 0.05f;
@@ -142,5 +143,15 @@ public class MainMenu : MonoBehaviour
     public void Exit()
     {
         Application.Quit();
+    }
+
+    public void ShowUpgrades()
+    {
+        AudioManager.Instance.Play("Button");
+        
+        if (upgradesUI != null)
+        {
+            upgradesUI.ToggleUpgradePanel();
+        }
     }
 }

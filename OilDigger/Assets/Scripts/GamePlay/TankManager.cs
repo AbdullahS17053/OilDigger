@@ -190,6 +190,14 @@ public class TankManager : MonoBehaviour
             return;
         }
 
+        // Check for reinforced tanks upgrade
+        if (UpgradeManager.Instance != null && UpgradeManager.Instance.AreTanksReinforced())
+        {
+            string notification = $"Weather event on Day {currentDay + 1}: All tanks protected by reinforcement.";
+            AddNotification(currentDay, notification);
+            return;
+        }
+
         int tanksToDestroy = Mathf.Min(Random.Range(1, 5), tanks.Count);
         int tanksDestroyed = 0;
         List<Tank> selectedTanks = new List<Tank>();

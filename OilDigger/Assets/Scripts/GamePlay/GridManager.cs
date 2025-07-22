@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class GridManager : MonoBehaviour
 {
+    public static GridManager Instance { get; private set; }
+
     [Header("Grid Settings")]
     [SerializeField] private int rows = 6;
     [SerializeField] private int columns = 5;
@@ -16,6 +18,14 @@ public class GridManager : MonoBehaviour
     [SerializeField] private GameObject[] prefabsToSpawn;
 
     private Lot[,] gridArray;
+
+    private void Awake()
+    {
+        if (Instance == null)
+            Instance = this;
+        else
+            Destroy(gameObject);
+    }
 
     private void Start()
     {
@@ -67,9 +77,96 @@ public class GridManager : MonoBehaviour
                 RegisterTankPositions(lotObj);
             }
         }
-
     }
     #endregion
+
+    #region Grid Operations
+    // Find the grid coordinates of a lot
+    public bool TryGetLotCoordinates(Lot lot, out int x, out int y)
+    {
+        for (int i = 0; i < columns; i++)
+        {
+            for (int j = 0; j < rows; j++)
+            {
+                if (gridArray[i, j] == lot)
+                {
+                    x = i;
+                    y = j;
+                    return true;
+                }
+            }
+        }
+
+        x = -1;
+        y = -1;
+        return false;
+    }
+
+    // Get adjacent lots (up, down, left, right)
+    public List<Lot> GetAdjacentLots(Lot lot, bool includeDiagonals = false)
+    {
+        List<Lot> adjacentLots = new List<Lot>();
+
+        if (!TryGetLotCoordinates(lot, out int x, out int y))
+            return adjacentLots;
+
+        // Check orthogonal directions (up, down, left, right)
+        if (x > 0) adjacentLots.Add(gridArray[x - 1, y]);                // Left
+        if (x < columns - 1) adjacentLots.Add(gridArray[x + 1, y]);      // Right
+        if (y > 0) adjacentLots.Add(gridArray[x, y - 1]);                // Down
+        if (y < rows - 1) adjacentLots.Add(gridArray[x, y + 1]);         // Up
+
+        // Optionally check diagonal directions
+        if (includeDiagonals)
+        {
+            if (x > 0 && y > 0) adjacentLots.Add(gridArray[x - 1, y - 1]);             // Bottom-Left
+            if (x < columns - 1 && y > 0) adjacentLots.Add(gridArray[x + 1, y - 1]);    // Bottom-Right
+            if (x > 0 && y < rows - 1) adjacentLots.Add(gridArray[x - 1, y + 1]);       // Top-Left
+            if (x < columns - 1 && y < rows - 1) adjacentLots.Add(gridArray[x + 1, y + 1]); // Top-Right
+        }
+
+        return adjacentLots;
+    }
+
+    // Get lots within a certain radius (in grid cells, not distance)
+    public List<Lot> GetLotsInRadius(Lot centerLot, int radius)
+    {
+        List<Lot> lotsInRadius = new List<Lot>();
+        
+        if (!TryGetLotCoordinates(centerLot, out int centerX, out int centerY))
+            return lotsInRadius;
+        
+        for (int x = Mathf.Max(0, centerX - radius); x <= Mathf.Min(columns - 1, centerX + radius); x++)
+        {
+            for (int y = Mathf.Max(0, centerY - radius); y <= Mathf.Min(rows - 1, centerY + radius); y++)
+            {
+                // Skip the center lot
+                if (x == centerX && y == centerY)
+                    continue;
+                
+                // Use Manhattan distance for radius check
+                int distance = Mathf.Abs(x - centerX) + Mathf.Abs(y - centerY);
+                if (distance <= radius)
+                {
+                    lotsInRadius.Add(gridArray[x, y]);
+                }
+            }
+        }
+        
+        return lotsInRadius;
+    }
+
+    // Get the most promising lots based on oil chance
+    public List<Lot> GetMostPromisingLots(List<Lot> lots, int count)
+    {
+        // Sort by oil chance (highest to lowest)
+        lots.Sort((a, b) => b.oilChance.CompareTo(a.oilChance));
+        
+        // Return the top 'count' lots or all if there are fewer than 'count'
+        return lots.GetRange(0, Mathf.Min(count, lots.Count));
+    }
+    #endregion
+
     #region Prop Spawning
     private void TrySpawnProp(GameObject lotObj)
     {
