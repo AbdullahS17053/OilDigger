@@ -1,18 +1,20 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.Purchasing;
 
 public class UpgradesUI : MonoBehaviour
 {
     [Header("Panel References")]
     [SerializeField] private GameObject upgradePanel;
     
-    [Header("Upgrade Buttons")]
-    [SerializeField] private Button reinforcedTanksButton;
-    [SerializeField] private Button automatedRefineryButton;
-    [SerializeField] private Button refinerySpeedButton;
-    [SerializeField] private Button advancedSurveyButton;
-    [SerializeField] private Button multiRigDrillingButton;
+    [Header("IAP References")]
+    [SerializeField] private IAPListener iapListener;
+    [SerializeField] private CodelessIAPButton reinforcedTanksButton;
+    [SerializeField] private CodelessIAPButton automatedRefineryButton;
+    [SerializeField] private CodelessIAPButton refinerySpeedButton;
+    [SerializeField] private CodelessIAPButton advancedSurveyButton;
+    [SerializeField] private CodelessIAPButton multiRigDrillingButton;
 
     [Header("Upgrade Status Text")]
     [SerializeField] private TMP_Text reinforcedTanksStatus;
@@ -35,21 +37,16 @@ public class UpgradesUI : MonoBehaviour
     [SerializeField] private TMP_Text advancedSurveyDesc;
     [SerializeField] private TMP_Text multiRigDrillingDesc;
 
+
     private void Start()
     {
-        // Setup button listeners
-        reinforcedTanksButton.onClick.AddListener(() => PurchaseUpgrade(UpgradeType.ReinforcedTanks));
-        automatedRefineryButton.onClick.AddListener(() => PurchaseUpgrade(UpgradeType.AutomatedRefinery));
-        refinerySpeedButton.onClick.AddListener(() => PurchaseUpgrade(UpgradeType.RefinerySpeedUpgrade));
-        advancedSurveyButton.onClick.AddListener(() => PurchaseUpgrade(UpgradeType.AdvancedSurveyDrones));
-        multiRigDrillingButton.onClick.AddListener(() => PurchaseUpgrade(UpgradeType.MultiRigDrilling));
-
-        // Setup price texts
-        reinforcedTanksPrice.text = "$7.99";
-        automatedRefineryPrice.text = "$4.99";
-        refinerySpeedPrice.text = "$3.99";
-        advancedSurveyPrice.text = "$2.99";
-        multiRigDrillingPrice.text = "$5.99";
+        
+        // Setup event handlers programmatically for each button
+        SetupIAPButtonEvents(reinforcedTanksButton);
+        SetupIAPButtonEvents(automatedRefineryButton);
+        SetupIAPButtonEvents(refinerySpeedButton);
+        SetupIAPButtonEvents(advancedSurveyButton);
+        SetupIAPButtonEvents(multiRigDrillingButton);
         
         // Setup detailed descriptions
         SetupDescriptions();
@@ -65,9 +62,25 @@ public class UpgradesUI : MonoBehaviour
         upgradePanel.SetActive(false);
     }
 
+    private void SetupIAPButtonEvents(CodelessIAPButton button)
+    {
+        if (button == null || iapListener == null)
+            return;
+
+        // Clear existing listeners to avoid duplicates  
+        button.onPurchaseComplete.RemoveAllListeners();
+        button.onPurchaseFailed.RemoveAllListeners();
+
+        button.onPurchaseComplete.AddListener(iapListener.OnPurchaseComplete);
+
+        button.onPurchaseFailed.AddListener((product, description) =>
+        {
+            iapListener.OnPurchaseFailed(product, description.reason);
+        });
+    }
+
     private void SetupDescriptions()
     {
-        // Set detailed descriptions for each upgrade
         if (reinforcedTanksDesc != null)
             reinforcedTanksDesc.text = "Protects all tanks from damage during weather events!";
             
@@ -75,10 +88,10 @@ public class UpgradesUI : MonoBehaviour
             automatedRefineryDesc.text = "Automatically refines crude oil at the end of each turn!";
             
         if (refinerySpeedDesc != null)
-            refinerySpeedDesc.text = "Doubles the output of refined fuel products!";
+            refinerySpeedDesc.text = "Doubles the output of refined fuel products!.";
             
         if (advancedSurveyDesc != null)
-            advancedSurveyDesc.text = "Survey 3 adjacent lots at once for the price of 1!";
+            advancedSurveyDesc.text = "Survey 3 adjacent lots at once for the price of 1!.";
             
         if (multiRigDrillingDesc != null)
             multiRigDrillingDesc.text = "Drill on 3 nearby lots simultaneously when drilling a single lot. Each additional lot still costs $250,000.";
@@ -101,6 +114,22 @@ public class UpgradesUI : MonoBehaviour
         UpdateStatusText(refinerySpeedStatus, UpgradeType.RefinerySpeedUpgrade);
         UpdateStatusText(advancedSurveyStatus, UpgradeType.AdvancedSurveyDrones);
         UpdateStatusText(multiRigDrillingStatus, UpgradeType.MultiRigDrilling);
+        
+        // Disable IAP buttons for already purchased upgrades
+        UpdateIAPButtonStatus(reinforcedTanksButton, UpgradeType.ReinforcedTanks);
+        UpdateIAPButtonStatus(automatedRefineryButton, UpgradeType.AutomatedRefinery);
+        UpdateIAPButtonStatus(refinerySpeedButton, UpgradeType.RefinerySpeedUpgrade);
+        UpdateIAPButtonStatus(advancedSurveyButton, UpgradeType.AdvancedSurveyDrones);
+        UpdateIAPButtonStatus(multiRigDrillingButton, UpgradeType.MultiRigDrilling);
+    }
+    
+    private void UpdateIAPButtonStatus(CodelessIAPButton button, UpgradeType upgradeType)
+    {
+        if (button == null || UpgradeManager.Instance == null)
+            return;
+            
+        // Disable the button if the upgrade is already owned
+        button.button.interactable = !UpgradeManager.Instance.HasUpgrade(upgradeType);
     }
 
     private void UpdateStatusText(TMP_Text statusText, UpgradeType upgradeType)
@@ -117,59 +146,22 @@ public class UpgradesUI : MonoBehaviour
     {
         UpdateAllUpgradeStatuses();
     }
-
-    private void PurchaseUpgrade(UpgradeType upgradeType)
-    {
-        AudioManager.Instance.Play("Button");
-
-        if (UpgradeManager.Instance == null)
-            return;
-
-        // Skip if already purchased
-        if (UpgradeManager.Instance.HasUpgrade(upgradeType))
-            return;
-            
-        // For testing purposes in Editor, just enable the upgrade
-        // Later, this will be replaced with IAP logic
-        UpgradeManager.Instance.SetUpgradeStatus(upgradeType, true);
-        
-        // Show confirmation
-        Debug.Log($"Purchased upgrade: {upgradeType}");
-        
-        // Show a confirmation popup or effect here when IAP is implemented
-        ShowUpgradePurchaseConfirmation(upgradeType);
-    }
-    
-    private void ShowUpgradePurchaseConfirmation(UpgradeType upgradeType)
-    {
-        // This would be expanded when implementing real IAP
-        string upgradeName = "";
-        switch (upgradeType)
-        {
-            case UpgradeType.ReinforcedTanks:
-                upgradeName = "Reinforced Tanks";
-                break;
-            case UpgradeType.AutomatedRefinery:
-                upgradeName = "Automated Refinery";
-                break;
-            case UpgradeType.RefinerySpeedUpgrade:
-                upgradeName = "Refinery Speed Upgrade";
-                break;
-            case UpgradeType.AdvancedSurveyDrones:
-                upgradeName = "Advanced Survey Drones";
-                break;
-            case UpgradeType.MultiRigDrilling:
-                upgradeName = "Multi-Rig Drilling";
-                break;
-        }
-        
-        Debug.Log($"Purchased {upgradeName} upgrade! Effects are now active.");
-    }
     
     private void OnDestroy()
     {
         // Clean up event listener
         if (UpgradeManager.Instance != null)
             UpgradeManager.Instance.OnUpgradePurchased -= UpdateUpgradeStatus;
+    }
+    
+    // For editor testing only - directly simulate purchases
+    public void EditorBuyUpgrade(int upgradeTypeIndex)
+    {
+        if (Application.isEditor && UpgradeManager.Instance != null)
+        {
+            UpgradeType upgradeType = (UpgradeType)upgradeTypeIndex;
+            UpgradeManager.Instance.SetUpgradeStatus(upgradeType, true);
+            Debug.Log($"DEBUG: Editor purchase of {upgradeType}");
+        }
     }
 }

@@ -36,6 +36,27 @@ public class UpgradeManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
+    
+    private void Start()
+    {
+        // Listen for cloud save events
+        if (CloudSaveManager.Instance != null)
+        {
+            CloudSaveManager.Instance.OnUpgradesLoaded += OnUpgradesLoadedFromCloud;
+        }
+        else
+        {
+            Debug.LogWarning("CloudSaveManager not found, upgrades will not persist across devices");
+        }
+    }
+
+    // Called when upgrades are loaded from the cloud
+    private void OnUpgradesLoadedFromCloud()
+    {
+        Debug.Log("Upgrades loaded from cloud, updating UI");
+        // We don't need to do anything here since the CloudSaveManager
+        // already calls SetUpgradeStatus for each owned upgrade
+    }
 
     public bool HasUpgrade(UpgradeType upgradeType)
     {
@@ -44,7 +65,6 @@ public class UpgradeManager : MonoBehaviour
             return GetDebugUpgradeStatus(upgradeType);
         }
 
-        // In the future, this will check cloud-saved data
         return GetDebugUpgradeStatus(upgradeType);
     }
 
@@ -69,26 +89,48 @@ public class UpgradeManager : MonoBehaviour
 
     public void SetUpgradeStatus(UpgradeType upgradeType, bool status)
     {
+        bool changed = false;
+        
         switch (upgradeType)
         {
             case UpgradeType.ReinforcedTanks:
-                reinforcedTanks = status;
+                if (reinforcedTanks != status)
+                {
+                    reinforcedTanks = status;
+                    changed = true;
+                }
                 break;
             case UpgradeType.AutomatedRefinery:
-                automatedRefinery = status;
+                if (automatedRefinery != status)
+                {
+                    automatedRefinery = status;
+                    changed = true;
+                }
                 break;
             case UpgradeType.RefinerySpeedUpgrade:
-                refinerySpeedUpgrade = status;
+                if (refinerySpeedUpgrade != status)
+                {
+                    refinerySpeedUpgrade = status;
+                    changed = true;
+                }
                 break;
             case UpgradeType.AdvancedSurveyDrones:
-                advancedSurveyDrones = status;
+                if (advancedSurveyDrones != status)
+                {
+                    advancedSurveyDrones = status;
+                    changed = true;
+                }
                 break;
             case UpgradeType.MultiRigDrilling:
-                multiRigDrilling = status;
+                if (multiRigDrilling != status)
+                {
+                    multiRigDrilling = status;
+                    changed = true;
+                }
                 break;
         }
 
-        if (status)
+        if (changed && status)
         {
             OnUpgradePurchased?.Invoke(upgradeType);
         }
@@ -117,6 +159,15 @@ public class UpgradeManager : MonoBehaviour
     public bool AreTanksReinforced()
     {
         return HasUpgrade(UpgradeType.ReinforcedTanks);
+    }
+    
+    private void OnDestroy()
+    {
+        // Clean up event listeners
+        if (CloudSaveManager.Instance != null)
+        {
+            CloudSaveManager.Instance.OnUpgradesLoaded -= OnUpgradesLoadedFromCloud;
+        }
     }
 }
 
